@@ -1,0 +1,528 @@
+ JOURNAL OF SOFT COMPUTING AND DATA MINING  
+e-ISSN: 2716 -621X  
+ 
+ JSCDM  
+   
+ 
+ 
+ 
+Human Mobility –Aware Air Quality Prediction and 
+Exposure Risk Mapping in Delhi  
+Methunraj  A1, Hariraman R2, Swetha S3, Kanga Suba Raja4, Dr. Joseph 
+Emerson Raja5*  
+1  Student, SRM Institute of Science and Technology, Computer Science Engineering, Tiruchirappalli 621105  
+2  Student, SRM Institute of Science and Technology, Computer Science Engineering, Tiruchirappalli 621105  
+3  Student, SRM Institute of Science and Technology, Computer Science Engineering, Tiruchirappalli 621105  
+4  Faculty of Engineering and Technology , SRM Institute of Science and Technology, Computer Science Engineering, Tiruchirappalli 621105  
+5  Faculty of Engineering and Technology , Multimedia University, Melak a, Malaysi a 
+ 
+*Corresponding Auth or: emerson.raja@mmu.edu.my  
+DOI:  
+Article Info  Abstract  
+Received:  
+Accepted:  
+Available online:  The Air quality in urban areas, particularly in megacities like Delhi, is 
+detrimental to health.  The majority of current air quality monitoring 
+systems provide macro -level data from a few fixed stations and the 
+situation is so bad. Such data do not reflect the very tightly -drawn, 
+changing exposure that a person goes through on their daily transport. 
+The paper gives the reader an outlook of a novel, unified system that 
+can be used for hyper -local air quality forecasting and mobility -
+sensitive exposure risk mapping. The proposed framework comprises 
+a heterogeneous data pipeline that integrates real -time  pollution 
+metrics, weather data and road network topology. A spatiotemporal 
+machine learning model is proposed which utilizes advanced 
+geographical and cyclical temporal features for making  𝑃𝑀2.5 levels 
+predictions with great detail along the major transportation corridors. 
+This predictive model is termed as the dynamic routing engine that 
+determines the risk level of different paths for the user. The commuters 
+have the option of selecting either t he “Fastest Route” or the “Cleanest 
+Route”, which is the healthiest for them. This also allows the users to 
+make informed decisions to reduce the amount of polluted air they 
+inhale. A functional prototype developed for the city of Delhi verifies 
+the system 's effectiveness. It reveals that the commuters can avoid a 
+significant amount of pollution by simply taking alternate routes, which 
+only add a bit of time to their journey. Our contribution is a significant 
+move towards developing smart city solutions tha t prioritize people 
+and enhance urban living through improved health.  Keywords  
+Air Quality Prediction · Machine 
+Learning · Spatiotemporal Modeling 
+· Exposure Risk · Eco -Routing · 
+Smart Cities   
+1. Introduction  
+According to the World Health Organization (WHO), almost the entire population of the planet, or 99%, inhales 
+air that contains higher -than -recommended levels of certain pollutants, and thus, air pollution becomes a global 
+health risk of the first order. T his situation is extremely serious in large cities, like Delhi, as it results in a significant 
+increase in the number of cases of respiratory and cardiovascular diseases.  Most air quality index (AQI) apps show 
+city-wide average data from a small number of official monitoring stations. This method doesn't take into account 
+the small, street -level differences in pollution or how an individual's risk of exposure changes based on how they 
+move. This paper presents a system designed to fill this gap by forecasting hyper -local air quality and offering 
+health -conscious navigation.  
+J. of Soft Computing and Data Mining Vol. 6 No. 1 (2025) p. 1 -20 2 
+ 
+ 
+1.1  Background and Motivation  
+The fast growth of cities has led to environmental problems that have never been seen before. One of the biggest 
+problems to public health is air pollution. The Forum of International Respiratory Societies says that air pollution 
+is a major cause of many no ncommunicable diseases, which kill millions of people too soon each year [15 ]. In 
+Delhi, levels of particulate matter (𝑃𝑀2.5) often go well above safe levels, which has serious health effects for the 
+people who live there.  
+1.2  Problem Statement and Research Gap  
+A small network of stationary monitoring stations is the foundation of current air quality management techniques.  
+The small spatial resolution of the data is extremely important for citywide alerts. This ends up creating a large 
+information gap since a person's real exposure to pollutants is very variable and influenced by their exact location 
+and movement through dif ferent urban microhabitats [1]. The citywide data becomes unsuitable for individual 
+health risk management due to the difference between the reported ambient air quality and the actual personal 
+exposure.  
+1.3 Proposed Solution and Approach  
+The present study suggests a framework for predicting human mobility patterns and mapping the associated air 
+quality exposure risk that will help to eliminate the existing gap. The proposed method offers a dynamic and 
+predictive model that recognizes the c omplex interconnections between meteorology, urban mobility, and the 
+movement of pollutants. Thanks to the merging of real -time data streams with a potent machine learning model, 
+the result is a highly localized, instant pollution map of the city’s transpo rtation system.  
+1.4 Key Contribution s 
+This work makes three main contributions:  
+1. Hybrid Spatiotemporal Prediction Model: To make accurate predictions of 𝑃𝑀2.5 concentrations for 
+non-monitored locations, a machine learning model is developed that implements advanced feature 
+engineering techniques that take into account the distance to significant traffic routes and cyclical time 
+patterns.  
+2. A Dynamic Exposure -Aware Routing Algorithm:  To enable a straight comparison of various travel 
+alternatives, we created an algorithm that uses these hyper -local predictions and measures the pollution 
+exposure along a particular route accumulatively.  
+3.  A Functional Prototype and Case Study: The entire application was developed as a web app for Delhi, 
+proving its effectiveness by allowing the users to select between the fastest route and one that was 
+obviously less polluted.  
+1.5 Paper Organization  
+By providing people with useful information, this research hopes to change passive data consumption into 
+proactive, health -conscious decision -making. The rest of this paper is structured as follows: Related work is 
+reviewed in Section II. Our system archit ecture and methodology are described in detail in Section III. The case 
+study and implementation are covered in Section IV. Section V will discuss the findings and restrictions. Finally, 
+the paper concludes with Section VI outlining future work.  
+2. Related Work  
+The three main areas of our work are health -oriented routing, personal exposure assessment, and air quality (AQ) 
+prediction . 
+When compared to traditional statistical techniques, AQ prediction has been greatly improved by developments 
+in machine learning (ML ) [11].  Because they could model intricate, non -linear relationships between predictors 
+like weather and pollution levels, models like Random Forests (RF), which were used in early machine learning 
+applications, were successful for spatiotemporal 𝑃𝑀2.5 prediction, [17].  In recent years, gradient boosting 
+frameworks —in particular, XGBoost —have frequently become the preferred model due to their superior 
+accuracy and robustness in comparative studies [16], [3]  At the same time, deep learning has become increasingly 
+popular in the field.  Architectures like Long Short -Term Memory (LSTM) networks, hybrid Convolutional -LSTM 
+models [12], [7], and Deep SpatioTemporal Residual Networks (ST -ResNets) [18] are establishi ng new standards 
+in city -wide AQ forecasting by automatically learning complex spatial and temporal dependencies. To improve 
+hyper -local accuracy, our work introduces new, context -aware geographic features while utilizing the high 
+performance of tree -base d ensemble models.  
+ 
+3 J. of Soft Computing and Data Mining Vol. 6 No. 1 (2025) p. 1 -20 
+ 
+ 
+Even though these prediction models show a high degree of accuracy, they are not very useful if they are 
+not applied to a person's actual experiences. The data from sparse, fixed monitoring stations, which are 
+insufficient to capture an individual's actual  pollution intake during daily transit, were the basis for traditional 
+environmental health assessments. Mobility patterns are important factors that influence an individual's overall 
+pollution intake, as evidenced by the groundbreaking work of De Nazelle et al. [4], who showed how GPS data 
+could produce high -resolution personal exposure profiles. Later studies have confirmed the importance of this 
+dynamic assessment method [14]  and the specific application of mobile phone data  [5]. Additionally, Chen et al. 
+[2] made a quantification of this impact in actual working conditions, and they validated that by using different 
+paths, even between the same starting and ending points, one can obtain very different exposure levels. The 
+outcome of this research puts em phasis on the urgent requirement for a mobility - centred strategy, which in turn 
+acts as the prime motivator of our system.  
+The invention of "eco -routing" systems that take into account factors other than time and distance is the next 
+step of this research [6]. A technique called "health -oriented routing" that aims to find the routes that minimize a 
+commuter’s exposure to pollu tants, completely changes the focus from vehicle efficiency to human well -being. To 
+approximate pollution levels between isolated monitoring stations, early systems such as the one suggested by 
+Zheng et al.  [19] often depended on basic spatial interpolati on using real -time AQ data. Due to the fact that it 
+neglects the complex, microenvironmental factors that make up pollution's fine -grained variation, this technique 
+might not be accurate. Our main contribution and differentiating factor is the development of a high -resolution, 
+dynamic pollution surface across the entire road network using a predictive machine learning model. This 
+represents a considerable methodological advance over earlier studies, and it more accurately and finely 
+calcula tes route -based exposure risk [13], [9]. Our system not only brings together the areas of personalized, 
+actionable public health recommendations and predictive environmental modelling but also combines these three 
+research areas.  
+3. System Architecture and Methodology  
+The recommended system is structured as a modular, enterprise -class framework that consists of elite data 
+acquisition, sophisticated feature engineering, machine learning model for prediction, and an instantaneous 
+routing service. The entire design, shown in Fig. 1, is made to be both scalable and accurate by utilizing the best 
+commercial APIs available.  
+ 
+ 
+Fig. 1: Architecture Diagram  
+ 
+
+J. of Soft Computing and Data Mining Vol. 6 No. 1 (2025) p. 1 -20 4 
+ 
+ 
+Our approach is preceded by a pipeline designed to quickly obtain large amounts of data. We get ground -
+truth air quality data from a commercial provider, such as the IQ Air API. This service allows users to access a very 
+large global network consisting of both official validated sensors and proprietary validated sensors. That is to say, 
+their spatial resolution and data quality are better than those of the publicly aggregated sources. Access to high -
+resolution weather models and hyper -local weather data pro vided IBM’s The Weather Company API covers 
+temperature, humidity, wind speed, wind direction, and precipitation.  
+The system utilizes the Google Maps Platform for routing and traffic analysis by mainly depending on the 
+Directions API and the Real -Time Traffic layer for this purpose. It not only gives the quickest and the most direct 
+routes but also enables the use of current and past traffic data, which is an essential factor for  pollution modelling.  
+In our methodology the design elements, particularly hyperparameter tuning are very crucial. On top of 
+that, the temporal cyclical features obtained from sinusoidal encoding.  
+ 
+ℎ𝑜𝑢𝑟_𝑠𝑖𝑛 =sin(2π⋅hour
+24) (1) 
+ 
+ 
+We have created two significant and vibrant characteristics:  
+• distance_to_major_road: The calculation of this geographical feature is based on the smallest geodesic 
+distance between a specific point and a well -selected list of main roads of Delhi. This distance is a very 
+good indicator of the emissions from local traffic, which are known to  have a strong connection with the 
+pollution  [18].  
+• real_time_traffic_index: We include a real -time traffic variable (e.g., speed relative to the speed limit) for 
+the road segment under study using information from the Google Maps Platform. Compared to time of 
+day alone, this offers a more accurate predictor of vehicle congestion s ince it is a direct and dynamic 
+measure.  
+Our system is based on a spatiotemporal prediction model.  After evaluating a number of tree -based ensemble  
+models, we  decided to deploy XGBoost because it performed better on  the held -out test set, as indicated by Mean  
+Absolute Error  (MAE) [6]. In order to predict 𝑃𝑀2.5 concentration with high  accuracy, the model was trained on a 
+rich feature set that  included the real -time traffic index.  Our dynamic routing algorithm is powered by this trained  
+model. The Google Maps Directions API is used by the  system to retrieve potential routes when a user requests a  
+route. A series of coordinate points is used to discretize each  route. A real -time feature vector is created for every 
+point  by computing the geographic/temporal features and executing  queries against the pertinent weather and 
+traffic APIs. The  𝑃𝑀{2.5} concentration is then predicted point -by-point by the  XGBoost model. A single Route 
+Exposure Score (RES) is  created by combining these predictions:  
+ 
+𝑅𝐸𝑆 =1
+𝑁∑predict (𝑓𝑒𝑎𝑡𝑢𝑟𝑒 𝑠𝑖)𝑁
+𝑖=1 (3) 
+ 
+Finally, the system gives the user a clear, measurable trade -off between travel time and health risk by 
+displaying the fastest route (based on Google's real -time traffic) and the route with the lowest RES (labeled the 
+"Cleanest Route").  
+4. Implementation and Case study  
+We created a full -stack functional prototype especially for the Delhi urban environment in order to validate our 
+methodology and show the usefulness of the Human Mobility –Aware Air Quality Prediction and Exposure Risk 
+Mapping system. Robust data handling, effective machine learning inference, and user -friendly interface design 
+are highlighted in this implement   
+4.1 Technology Stack and Deployment   
+A scalable, enterprise -class technology stack serves as the foundation for the prototype:  
+1) Backend:  Python and the Flask web framework are used to create the server -side application. Flask takes 
+care of managing all API endpoints, handling routing requests, calling the machine learning model for 
+predictions, and also coordinating real -time data retrieva l from external services.  
+2) Machine Learning Development:  The initial model training, hyperparameter tuning, and extensive 
+testing of different machine learning algorithms (Random Forest, XGBoost) were done primarily in ℎ𝑜𝑢𝑟_𝑐𝑜𝑠 =cos(2π⋅hour
+24) (2) 
+5 J. of Soft Computing and Data Mining Vol. 6 No. 1 (2025) p. 1 -20 
+ 
+ 
+Google Colaboratory (Colab). The use of the interactive notebook environment of Colab and the 
+computational resources, such as  GPUs  or larger -scale experiments if needed, that were  readily available, 
+made the rapid prototyping and model  refinement possible. For high -performance inference, the  Flask 
+backend loads the final XGBoost model directly  after it has been serialized using Joblib.  
+3) Data Management:  One Single PostgreSQL database  will store all the features that are engineered and 
+all the sensor data of past and present. This maintains intra  system operations and ensures that the data 
+is secured  together. It also allows for a simpler querying of the  model for retraining.  
+4) External APIs:  The system connects with external  APIs of commercial -grade to enhance the quality and  
+reliability of data, which was detailed in Section III.  Among these are the Google Maps Platform (utilizing  
+the Directions API for routing along with the Real -Time Traffic data for better feature engineering), IBM’s  
+The Weather Company API for supplying hyper -local  meteorological conditions as well as the IQAir API 
+for providing  high -resolution air quality data.  
+5) Frontend:  With the use of traditional HTML, CSS, and  JavaScript, a front -end single -page, responsive web 
+application was designed. The interactive map is rendered  using the Leaflet.js library, which allows the 
+pollution  layers to be dynamically displayed and the generated  routes to be visualized. One of the 
+functioning aspects  is that  the backend API is being accessed through  AJAX (asynchronous JavaScript and 
+XML) calls that are  triggered by  user interactions for real -time processing.  
+6) Deployment:  Docker is used to containerize the entire  application for operational stability and 
+scalability. This  guarantees reproducible settings for both production and  development. An AWS EC2 
+instance is the one that  runs the Dockerized application on cloud infrastructure  and this setup leads to an 
+extremely reliable and fast  system  for processing many user requests at the same  time. GitHub Actions is 
+the tool that takes care of  the automation  of data collection and retraining of the  model, if necessary, 
+thereby guaranteeing that the data  is constantly fresh and the model is always relevant.  
+4.2 User Interface and Interaction Flow  
+The interface of this application has been designed with great attention so that users will be able to interact easily 
+and to receive complicated information about the environment in a simple way. The most important characteristic 
+is a Delhi map that users  can interact with and that offers them the opportunity to:  
+1) Visualize Real -time Pollution Heatmap: The 𝑃𝑀2.5 heatmap from our prediction model is maintained 
+dynamically on the map. The heatmap is visualized through  the road network and urban areas by the 
+hyper -local  air quality with regions of high (red/orange) and low  (green/blue) pollution concentrations. 
+The determination  of the air quality spatial variation is made very easy for  the users even before they 
+plan their travels due to this  visual component which is so important.  
+2) Define Origin and Destination:  By clicking on particular points on the interactive map or by entering 
+addresses  into designated text fields, users can enter their start and  end locations.  
+3) Request Routes:  When one clicks the "Find Best  Routes" button, the application connects 
+asynchronously  to the sorting machine in the backend.  
+4) Visualize and Compare Routes:  And, the system also  superimposes the two main routes on the real -
+time  pollution heatmap.  
+• Fastest Route:  Calculated through the Google Maps  Directions API and fine -tuned for the least 
+possible  travel time considering the traffic condition at that  particular moment. Generally, this route 
+is displayed  in a certain color, for example, blue.  
+• Cleanest Route:  Identified by our dynamic routing  technique as having the lowest expected 
+cumulative 𝑃𝑀2.5 exposure. This route’s contrasting color  (green, for example) clearly illustrates how 
+it might  avoid high -pollution  areas that are visible on the  heatmap underneath.   
+Tooltip or overlay, which are easy to see, are  connected to each visualized route and they show  the 
+route type  (Fastest/Cleanest), the travel time  estimated, and the average 𝑃𝑀2.5 exposure score.  By 
+utilizing the pollution heatmap, a temporary comparison is made, which is the main reason for users' 
+insights that can be easily applied to making health -preferring travel choices.  
+4.3 Case Study: Commute from Connaught Place to Dwarka  
+As an exploration and to demonstrate the system's possible impacts, we executed a detailed case study simulating 
+an average urban commute in Delhi. The location of our trip was Connaught Place (28.63° N, 77.21° E), the center 
+of government and business act ivities, while the final destination was Dwarka (28.59° N, 77.04° E), which is a big 
+and very populated area with mainly housing. The time selected for this test was 6:00 PM on a weekday, which is 
+the peak hour when air pollution and traffic jams are gener ally at their worst.  
+In turn, the system provided two alternatives for routing.  
+ 
+ 
+J. of Soft Computing and Data Mining Vol. 6 No. 1 (2025) p. 1 -20 6 
+ 
+ 
+TABLE I:  Comparison of Routes for Connaught Place to Dwarka Commute (Peak Evening Rush Hour)  
+Route Attribute  Fastest Route  Cleanest Route  
+Route Type  
+ Via Major Arterial Roads  Via Internal Bypass Roads  
+Est. Travel Time  48 minutes  
+ 58 minutes  
+ 
+Avg. 𝑃𝑀2.5 Exposure  
+ 172 µg/m³ (Very Poor)  
+ 125 µg/m³ (Poor)  
+ 
+Relative Exposure Reduction  
+                             — 27.3%  
+ 
+5. Results and Discussion  
+This part demonstrates the empirical evaluation of our spatiotemporal 𝑃𝑀2.5 forecasting model and discusses the 
+main factors influencing its precision, gives a thorough explanation of the model, its activity through advanced 
+methods, and a review of the system’s current limitations and wider significance  
+5.1 Model Performance  
+The chosen XGBoost model was subjected to intense scrutiny by testing it on a different dataset (which was 20% 
+of the total historical data) to determine the accuracy of our machine learning approach. The same dataset was 
+also used to train a Random Forest  model and a baseline Linear Regression model for the purpose of comparison. 
+Mean Absolute Error (MAE) was the main evaluation metric which gave a clear and easy -to-understand indication 
+of the prediction errors’ average size in the same units as the targe t variable, 𝑃𝑀2.5. The performance results of 
+these models are summarized in Table II.  
+ 
+TABLE 2: Predictive Model Performance Comparison for 𝑃𝑀2.5 (µg/m3)  
+Model  Mean Absolute Error (MAE)  
+Linear Regression (Baseline)  28.54  
+Random Forest  14.21  
+XGBoost  12.88  
+ 
+It was only expected that the Random Forest and XGBoost ensemble models would come out on top, and 
+indeed they did. The most precise model was  XGBoost with a mean absolute error of 12.88 µg/m³. Although the 
+low MAE  denotes the significant overall performance, it is still very important to do the  visual inspection of the 
+model’s reliability over varying pollution levels. Thus,  we made a scatter plot of the predicted and actual values of 
+𝑃𝑀2.5 for the test  set, which can be seen in Fig. 2. 
+7 J. of Soft Computing and Data Mining Vol. 6 No. 1 (2025) p. 1 -20 
+ 
+ 
+ 
+Fig. 2:  Predicted vs. Actual 𝑃𝑀2.5 values on the test set. The tight clustering of points around the ideal line (y=x) 
+indicates a strong correlation and good predictive performance across the range of pollution levels  
+ 
+The spots presented in Fig. 2 are located very closely to the 45 -degree identity line, which signals a very 
+strong positive association between the model’s  forecasts and the actual measurements. The visual proof in this 
+case gives credibility to the claim that the model is not only an average performer but also a big one across the 
+entire pollution values, even in the test data where highest and lowest concentrations were used.  
+5.2 Feature Importance Analysis  
+Knowing the most important input features for the model’s prediction is necessary for verifying our scientific 
+assumptions, gaining a better understanding  of urban pollution dynamics, and selecting areas where the model 
+can be im proved. The trained XGBoost model’s standard feature importance scores, giving  a high -level perspective 
+of these relationships, are illustrated in Fig. 3. By show ing their total contribution to the model’s predictive power, 
+this figure effectively  ranks features and allows us to spo t the leading factors of pollution with ease.  For example, 
+Fig. 3 very clearly reveals that real_time_traffic_index and dis tance_to_major_road are the two most powerful 
+factors, thus confirming our  initial guess about the impact of traffic emissions in Delhi.  
+
+J. of Soft Computing and Data Mining Vol. 6 No. 1 (2025) p. 1 -20 8 
+ 
+ 
+ 
+Fig. 3:  XGBoost model feature importance scores. The chart illustrates the relative contribution of each feature 
+to the model’s predictions, with dynamic traffic and custom geographic features being the most influential  
+ 
+Although Figure 3 ranks the features quite well, it fails to clarify the way a  feature affects the prediction 
+(e.g., does the presence of a high volume of traf fic increase or lower the pollution prediction?). To come up with a 
+completely  interpretable model, we used mechanisms of SHAP (S Hapley Additive exPlana tions). The SHAP 
+summary plot, which is a more sophisticated “vector graph”  displayed in Fig 4, clarifies not only the significance 
+of each feature but also the  direction and weight of its influence.  
+
+9 J. of Soft Computing and Data Mining Vol. 6 No. 1 (2025) p. 1 -20 
+ 
+ 
+ 
+Fig. 4:  SHAP summary plot illustrating feature impact on Model  output. Each point is a Shapley value for a feature 
+and an instance. The color represents the feature value (red=high, blue=low).  
+ 
+This advanced visualization gives much insight into the decision -making pro cess of that model.  
+• The real_time_traffic_index:  This feature surfaced to be one of the  most decisive ones, thus validating 
+our supposition that changing traffic conditions are not only direct but also major predictors of localized 
+air pollution, to the extent of making time -based static proxies redundant. The model effectively portrays 
+the i nstant influence of car emissions during the times of traffic jams.  
+• The distance_to_major_road:  This aspect of the research also gained a  high -ranking position, which 
+showed its capability as a geographic proxy for  background emissions from traffic pollution and the 
+impact of main roads  on the pollution sources being stuck in the urban areas (i.e., urban canyon  effects).  
+• Temporal features  (hour_sin, hour_cos, day_of_week):  These were  very important, indicating the 
+model’s capability to discover the strong daily  and weekly patterns of human activities, like commuting 
+and industrial operations, which are typical in most countries.  
+• Meteorological variables (e.g., wind_speed, humidity, temperature):  The impact of these variables 
+was great and in accordance with the  atmospheric science principles that govern the distribution of 
+pollutants and  their reactions [10]. Among all, wind speed is the most important factor in  determining 
+the rate of atmospheric pollution dilution.  
+• Geographic Coordinates (latitude, longitude): The initial coordinates  still held some significance, 
+which suggested that there were different spatial distributions of baseline pollution levels the other 
+features could not  completely capture. Unmodeled elements like diverse land use or immobile  industrial 
+sources could be the reason for this.  
+5.3 Spatial Error Analysis  
+Although a collective mistake measure such as Mean Absolute Error (MAE) gives a numerical value to the 
+performance of the model overall, it can also cover up possible biases in different regions. Therefore, to check if 
+the model gives the same performance in every area, a spatial error analysis was done.  Actual 𝑃𝑀2.5 – Predicte d 
+𝑃𝑀2.5was the definition of prediction residuals which  were being analyzed at the monitoring station locations that 
+were included in  our test set. This analysis is of utmost importance as it not only shows the  model’s performance 
+in one figure but also provides the user with a diagnostic  map indicating the geographical areas where the model 
+is strong or weak.  
+
+J. of Soft Computing and Data Mining Vol. 6 No. 1 (2025) p. 1 -20 10  
+ 
+ 
+ 
+Error datascript could provide several insightful information relative to the  real-world performance of the model:  
+• In most cases, the model has shown good performance across residential and commercial sectors 
+that consist of small and randomly placed errors.  
+• A small but steady pattern is noticed in the prediction of pollution levels (red dots show 
+underestimation) through monitoring different areas of heavy  industry and transit (such as big 
+bus depots or railway yards) which were  not included in our distance_to_major_road feature set 
+explicitly. The geo graphic features that we are using for our analysis are strong, but they might  
+not be able to completely measure the influence of these large, stationary  sources of emissions.  
+• In contrast, the major green cover areas such as big parks or wooded hills showed a slight 
+tendency for over -prediction (blue dots), which suggests that the performance of the model could 
+be improved by considering traits that detect the pollution -reducing  effects of vegetation.  
+The analysis presented here is of great worth since it is not limited to just  one error score but rather gives 
+a diagnostic map of the model’s strengths and weaknesses which then directly informs the limitations and future 
+work discussed in the following sections.  
+5.4 Discussion and System Implications  
+A robust visual connection (Fig. 2) and a minimal Mean Absolute Error (Table II) reaffirmed the strong ability 
+of the model to accurately forecast 𝑃𝑀2.5 at the non -monitoring locations, thus paving the way for a new kind of 
+personalized environmental services. The trip from Connaught Place to Dwarka demonstrated that 𝑃𝑀2.5 
+exposure was considerably and notably lowered by 27.3% with an increase in travel time of only 10 minutes. This 
+is the transformation of urban dwellers into an active preventive measure that relies on the conversion of passive 
+environmental data into healt h-oriented choices, thus empowering them.  
+The model's interpretability is very important for revealing the meaning of this finding. The SHAP analysis 
+(Fig. 4) not only shows the correlation but also reveals the causal -like insights that support our feature 
+engineering as a perfect depiction of the  physics and traffic dynamics of urban pollution. A belief of the model in 
+factors like congested roads and closeness to main highways as having a major influence on pollution level is what 
+makes it possible for the system to suggest a route with less poll ution.  The system indeed not only informs about 
+the present -air-quality but also gives practical advice concerning the risk of personal exposure.  
+Furthermore, the modular architecture that is built on commercial -grade  APIs guarantees the scalability and 
+durability of the system for use in actual  urban areas. The choice of a high -performance model such as XGBoost 
+guaran tees that real -time predictions can be done with very little delay, which is a key  requirement for dynamic 
+routing applications where speed is the main aspect.  Setting up a database and having automated data collection 
+pipelines in place  are the two main factors that support the growing  of the data and the continued  maintenance 
+of the system.  
+5.5 Limitatio n 
+Although the current prototype has potential, there are still some weaknesses that are going to be mentioned and 
+that might be useful in future research.  
+1. Pollutant Scope: The model is mainly focusing on 𝑃𝑀2.5 since it is working  with a vast amount 
+of data and hence it is very  much accessible. However,  extending the prediction to 𝑃𝑀10, carbon 
+monoxide (CO), ozone (O3), and  nitrogen dioxide (NO2) that are also significant pollutants would 
+provide a  more thorough exposure assessment.  
+2. Emission Source Detail:  Although the real_time_traffic_index is a very  good substitute for it, the 
+model does not distinguish emissions sources, for  example, industrial stack emissions, 
+construction dust, residential heating,  and different vehicle types, explicitly. Predicting more 
+accurately could be  done by including more detailed land -use data, comprehensive emission 
+inventories, or even mobile sensors’ data through the identification of specific  contributors.  
+3. Micro -Environmental Factors:  Highly localized microenvironmental ef fects that can have a 
+substantial impact on pollution dispersion at a very  fine spatial scale, such as building wake 
+effects, the presence of green infras tructure (parks and trees), and urban canyon geometry 
+(narrow streets be tween tall buildings), are not explicitly taken into account by the model. The  
+aforementioned issue can be rectified by employing LiDAR -sourced dataor elaborate 3D models 
+of the urban landscape.  
+4. Prediction Horizon: Real -time prediction for instantaneous routing is the  main focus of the 
+current system. One of the benefits that would be de rived from the establishment of robust 
+forecasting abilities for distant future  periods (e.g., estimating pollution for a trip set to begin in 
+three hours)  is that it would open the way for a more advanced and tactical approach  to planning. 
+It would probably be necessary to incorporate more weather  forecasting models for this.  
+11  J. of Soft Computing and Data Mining Vol. 6 No. 1 (2025) p. 1 -20 
+ 
+ 
+5. User -Specific Factors:  Individual exposure may differ according to per sonal physiological 
+characteristics and mode of transportation (e.g., walking,  open scooter, enclosed car). 
+Personalized exposure modeling may be explored in later versions.  
+6. Conclusion and Future Work  
+6.1 Conclusion  
+This study introduced a brand -new, integrated system for exposure risk mapping and human mobility -aware air 
+quality prediction that is intended for urban  settings like Delhi. The crucial discrepancy between coarse, citywide 
+air quality  data and the real, dynamic pollution exposure people experience on their daily  commutes was 
+effectively closed. We showed how to forecast air pollution at a  hyper -local level throughout the urban road 
+network by designing a full -stack  application that combines a spatiotempora l XGBoost model with sophisticated  
+feature engineering, such as real -time traffic indices and geographic context.  
+The conversion of these predictions into a useful, health -focused navigation  tool is the main contribution of 
+this work. Our case study unequivocally demon strated that the system can find alternate routes that, for a slight 
+increase in  travel time, provide a significant reduction in commuter 𝑃𝑀2.5 exposure. Through our steps, we 
+demonstrate a clear intention of giving the community data -based tools which would help them to select the 
+healthier way of living and thus by exposing the air pollution risk that was previously unnoticed, establishing and 
+encouraging  a more  eco-friendly and health -oriented city living area.  
+6.2 Future Work   
+Our prototype, although very promising, has led us to discover several interesting research and development 
+pathways that can be explored to further enhance its effectiveness and penetration:  
+1. Advanced Deep Learning Models: Our plan for the future is to explore more sophisticated deep 
+learning models such as LSTMs coupled with Graph Convolutional Networks (GCNs). The GCN, 
+by mapping the road network graphically, might have a superior grasp of the pollution diffusion 
+through t he transport system which would result in a greater prediction accuracy.  
+2. Expanded Pollutant Scope: 𝑃𝑀2.5 is the primary pollutant considered in the present model. In 
+the coming years, the framework will be broadened to predict a wider range of harmful 
+pollutants, namely, carbon monoxide (CO), ozone (O3), and nitrogen dioxide (NO2), thereby 
+offering a more deta iled and comprehensive exposure risk assessment.  
+3. Integration of Micro -Environmental Data: To enhance the hyper -local precision, we will 
+consider including additional data sources with more details. The study makes use of a number 
+of methods, one of which is land -use data, to assess the impact of the presence of greenery like 
+parks, additionally , the cityscape is modeled in 3D or LiDAR data is used to analyze the 
+configuration of buildings and the effects of urban canyons.  
+4. Development of a Mobile Application and User Study: We shall also create a mobile app 
+specifically designed for both iOS and Android operating systems, which will ultimately increase 
+the deployment and impact in the real world. Then, a user study will later on be carried out with 
+the purpose of assessing th e system's user -friendliness, its effect on commuter behavior, and the 
+extent of exposure reduction.  
+5. Personalized Exposure Modeling:  The system upgrade might provide a chance to present users 
+with more personalized risk profiles. This would mean allowing users to select their preferred 
+transport mode (e.g., enclosed car, scooter, pedestrian, cyclist), as different transport modes lead 
+to different levels of exposure even on the same route.  
+References  
+1. Agrawal, S., Jain, R.S., Sharma, A.: A machine learning approach to predict air quality in delhi. 
+Environmental Science and Pollution Research 27(27), 33729 – 33742 (2020)  
+2. Chen, C.R., Chiang, H.L., Lin, Y.C.: Mobility -based exposure to pm2. 5 in a commuting scenario. 
+Environmental Pollution 250, 486 –494 (2019)  
+3. Chen, T., Guestrin, C.: Xgboost: A scalable tree boosting system. In: Proceedings of the 22nd acm sigkdd 
+international conference on knowledge discovery and data mining. pp. 785 –794 (2016)  
+4. De Nazelle, A., Fruin, S.A., Ambrós, A., Aguilera, I., Gascon, M., Dadvand, P., Jerrett, M., Nieuwenhuijsen, 
+M.J.: Measuring personal exposure to air pollution using gps and mobile phone data. Environmental 
+Science & Technology 47(13), 7307 –7313 (2013)  
+J. of Soft Computing and Data Mining Vol. 6 No. 1 (2025) p. 1 -20 12  
+ 
+ 
+5. Gabo -Ratio, J.M.S., Ho, T.H., Militante, M.A.: The use of mobile phone data to estimate air pollution 
+exposure. International Journal of Communication Networks and Information Security (IJCNIS) 13(1), 
+71–80 (2021)  
+6. Huang, Y., Boriboonsomsin, K., Yu, W.: Eco -routing: A survey and future directions. Transportation 
+Research Part D: Transport and Environment 36, 78 –89 (2015)  
+7. Huang, Y., Li, W.: A hybrid deep learning model for spatiotemporal prediction of pm2.5 concentration 
+(convlstm). Environmental Science and Pollution Research 28(3), 3010 –3023 (2021)  
+8. Keerthirathna, K., Perera, A.: The role of distance to road and traffic volume on air pollution concentration 
+in urban areas. Environmental Monitoring and Assessment 193(11), 715 (2021)  
+9. Kim, M.J., Lee, J.H., Lee, J.S.: Health -optimal route finding: A framework for minimizing air pollution 
+exposure. Computers, Environment and Urban Systems 72, 1 –10 (2018)  
+10. Kim, S.H., Kim, J., Kim, J.H.: The importance of meteorological features for pm2.5 prediction: A deep 
+learning perspective. Journal of Environmental Management 233, 467 –478 (2019)  
+11. Kumar, P., Gupta, R., Garg, P.K.: A review on the application of machine learning in air quality prediction. 
+Atmosphere 14(4), 666 (2023)  
+12. Li, X., Peng, L., Yao, Y., et al.: A deep learning model for air quality prediction  in urban areas. Journal of 
+Environmental Informatics 30(2) (2017)  
+13. Nguyen, D.H.P., Nguyen, M.T.T., Nguyen, L.V.S.: A multi -criteria routing algorithm to reduce pedestrian 
+exposure to air pollution. Transportation Research Part D: Transport and Environment 81, 102284 
+(2020)  
+14. Pires, M.A.F., Corrêa, A.I.R.N.: Dynamic human -exposure assessment in urban environments. 
+Environmental Modeling & Assessment 22(5), 483 –496 (2017)  
+15. Schraufnagel, D.E., Balmes, J.R., Cowl, C.T., De Matteis, S., Feldman, C., Guleria, R., Grigg, J., Han, M.I., Perez -
+Padilla, R., Rice, M.B., et al.: Air pollution and noncommunicable diseases: A review by the forum of 
+international respiratory societies. C hest 155(2), 409 –416 (2019)  
+16. Sharma, N., Sharma, S., Singh, P.K.: A comparative study of machine learning models for air quality 
+prediction. Journal of Ambient Intelligence and Humanized Computing 11(10), 4115 –4127 (2020)  
+17. Zhan, X., Li, Y., Hoogh, K.C.M.d.: Spatiotemporal pm2.5 prediction based on random forest model. 
+Atmospheric Environment 161, 279 –289 (2017)  
+18. Zhang, J., Zheng, Y., Qi, D.: Deep spatio -temporal residual networks for citywide crowd flows prediction. 
+AAAI pp. 1655 –1661 (2017)  
+19. Zheng, Y., Liu, F., Hsieh, H.P.: A health -oriented route planning system based on real -time air quality. 
+Proceedings of the VLDB Endowment 6(12), 1330 –1333 (2013)  
