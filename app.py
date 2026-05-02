@@ -10,10 +10,21 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from collections import deque
 
+import os
+from dotenv import load_dotenv
+
+# Load local .env file if it exists
+load_dotenv()
+
 # ================= API KEYS =================
-OW_API_KEY = "8efc52216f721e5464cc94c7488ffd43"
-ORS_API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImE1ZmMzZTYwNWVkODU4MGRlZmE5MzM2Y2YxOGZhNzNjMjkxNjE1OTI4YzllZDIzYTQ1YTk2Y2U1IiwiaCI6Im11cm11cjY0In0="
-WAQI_TOKEN = "a41750fc04d38de84c400cb371bee103fdb02d5f65bbaa3585ed046bda3fb233"
+# We now securely load these from the environment!
+OW_API_KEY = os.environ.get("OW_API_KEY")
+ORS_API_KEY = os.environ.get("ORS_API_KEY")
+WAQI_TOKEN = os.environ.get("WAQI_TOKEN")
+
+if not all([OW_API_KEY, ORS_API_KEY, WAQI_TOKEN]):
+    print("WARNING: Missing API keys in environment variables. Functionality may be limited.")
+
 
 # ================= STATIC DATA =================
 DELHI_LOCATIONS = {
