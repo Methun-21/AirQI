@@ -1,5 +1,5 @@
 # .github/workflows/main.yml
-name: Hourly Data Collection
+name: Hourly Data Collection and Model Training
 
 on:
   workflow_dispatch:
@@ -28,18 +28,24 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Collect data
+        # FIX: Changed to the correct filename
         run: python collect_data.py
+
+      - name: Train model
+        # FIX: Changed to the correct filename
+        run: python train_model.py
 
       - name: Commit and push changes
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions-bot@github.com"
           
-          git add delhi_aqi_data_waqi.csv
+          # Make sure this matches the output file from your script
+          git add delhi_aqi_data_waqi.csv pollution_model_waqi.pkl
           
           if git diff --staged --quiet; then
             echo "No new data to commit."
           else
-            git commit -m "Automated WAQI hourly data collection"
+            git commit -m "Automated WAQI data collection and model training"
             git push
           fi
