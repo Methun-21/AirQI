@@ -33,17 +33,13 @@ jobs:
         # FIX: Changed to the correct filename
         run: python collect_data.py
 
-      - name: Train model
-        # FIX: Changed to the correct filename
-        run: python train_model.py
-
       - name: Commit and push changes
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions-bot@github.com"
           
           # Make sure this matches the output file from your script
-          git add delhi_aqi_data_waqi.csv pollution_model_waqi.pkl
+          git add delhi_aqi_data_waqi.csv
           
           if git diff --staged --quiet; then
             echo "No new data to commit."
