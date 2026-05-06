@@ -50,14 +50,32 @@ MAJOR_ROADS_AND_JUNCTIONS = [
 ]
 
 # ================= LOAD ML MODELS =================
-try:
-    stacked_model = joblib.load("models/stacked_model.pkl")
-    features_list = joblib.load("models/features_list.pkl")
-    print("✅ SUPERCHARGED Stacking Ensemble loaded successfully.")
-except Exception as e:
-    print(f"❌ Failed to load models: {e}")
-    stacked_model = None
-    features_list = None
+import os
+import subprocess
+
+def load_models():
+    global stacked_model, features_list
+    try:
+        stacked_model = joblib.load("models/stacked_model.pkl")
+        features_list = joblib.load("models/features_list.pkl")
+        print("ML Models loaded successfully.")
+    except Exception as e:
+        print(f"Models not found: {e}")
+        print("Auto-training models from data... This may take a few minutes.")
+        try:
+            os.makedirs("models", exist_ok=True)
+            subprocess.run(["python", "train_model.py"], check=True)
+            stacked_model = joblib.load("models/stacked_model.pkl")
+            features_list = joblib.load("models/features_list.pkl")
+            print("Auto-training complete. Models loaded successfully.")
+        except Exception as train_err:
+            print(f"Auto-training failed: {train_err}")
+            stacked_model = None
+            features_list = None
+
+stacked_model = None
+features_list = None
+load_models()
 
 # ================= FLASK APP =================
 app = Flask(__name__)
