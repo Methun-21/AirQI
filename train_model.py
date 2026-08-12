@@ -1,125 +1,150 @@
-import pandas as pd
-import numpy as np
+"""
+AIRAWARE ML Training Pipeline
+Loads training data from SQLite database (airaware.db), trains base gradient boosting models and Ridge Stacking Ensemble,
+evaluates performance, and logs run metrics to SQLite.
+"""
+
+import os
 import joblib
-from geopy.distance import geodesic
-from sklearn.model_selection import RandomizedSearchCV, TimeSeriesSplit
-from sklearn.metrics import mean_absolute_error
+import numpy as np
+import pandas as pd
+import warnings
+from sklearn.model_selection import TimeSeriesSplit
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.ensemble import RandomForestRegressor, StackingRegressor
 from sklearn.linear_model import Ridge
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 from catboost import CatBoostRegressor
-import warnings
+
+from features import engineer_dataframe_features, FEATURE_COLUMNS
+from database import load_telemetry_df, log_model_run
+
 warnings.filterwarnings('ignore')
 
-print("--- 1. LOADING & CLEANING ---")
-df = pd.read_csv("delhi_aqi_data_waqi.csv")
-df['time'] = pd.to_datetime(df['time'], errors='coerce')
-df.dropna(subset=['time'], inplace=True)
 
-# Geographic Features
-major_roads = [(28.6473, 77.3155), (28.6307, 77.2479), (28.5372, 77.2882), (28.7011, 77.1611), (28.5932, 77.1636), (28.5485, 77.2520), (28.6315, 77.2167), (28.6517, 77.1907)]
-def get_dist(lat, lon):
-    return min(geodesic((lat, lon), r).kilometers for r in major_roads)
-df['distance_to_major_road'] = df.apply(lambda row: get_dist(row['lat'], row['lon']), axis=1)
+def train_pipeline(data_path="delhi_aqi_data_waqi.csv", output_dir="models", db_path="airaware.db"):
+    print("[INFO] Loading training dataset from SQLite database / CSV...")
+    raw_df = load_telemetry_df(db_path=db_path, csv_fallback=data_path)
+    
+    if raw_df.empty:
+        raise ValueError("No telemetry data found in SQLite database or CSV.")
+        
+    print(f"[OK] Loaded {len(raw_df)} total records for feature engineering.")
 
-print("--- 2. ADVANCED FEATURE ENGINEERING ---")
-target = 'pm2_5'
-df['hour'] = df['time'].dt.hour
-df['month'] = df['time'].dt.month
-df['day_of_week'] = df['time'].dt.dayofweek
-df['is_weekend'] = (df['day_of_week'] >= 5).astype(int)
-df['is_rush_hour'] = df['hour'].apply(lambda x: 1 if (8 <= x <= 11) or (17 <= x <= 20) else 0)
+    print("[INFO] Running feature engineering pipeline...")
+    target = 'pm2_5'
+    df = engineer_dataframe_features(raw_df, target_col=target)
+    
+    features = FEATURE_COLUMNS
+    df.dropna(subset=features + [target], inplace=True)
+    df = df.sort_values('time')
+    
+    X = df[features]
+    y = np.log1p(df[target])  # Log1p transformation for volatility handling
 
-# Cyclic Encoding
-df['hour_sin'] = np.sin(2 * np.pi * df['hour'] / 24.0)
-df['hour_cos'] = np.cos(2 * np.pi * df['hour'] / 24.0)
+    split = int(len(df) * 0.85)
+    X_train, X_test = X.iloc[:split], X.iloc[split:]
+    y_train, y_test = y.iloc[:split], y.iloc[split:]
+    actual_y_test = np.expm1(y_test)
 
-# DEEP Spatiotemporal Lags (per location)
-df = df.sort_values(['location', 'time'])
-df['pm2_5_lag1'] = df.groupby('location')[target].shift(1)
-df['pm2_5_lag3'] = df.groupby('location')[target].shift(3)
-df['pm2_5_lag24'] = df.groupby('location')[target].shift(24) # 24h memory
-df['rolling_6h'] = df.groupby('location')[target].transform(lambda x: x.rolling(window=6, min_periods=1).mean())
-df['rolling_std_6h'] = df.groupby('location')[target].transform(lambda x: x.rolling(window=6, min_periods=1).std().fillna(0)) # Volatility
+    print(f"[OK] Training set: {len(X_train)} samples | Validation set: {len(X_test)} samples")
 
-# Multi-Variable Interactions
-df['temp_hum'] = df['temp'] * df['humidity']
-df['wind_temp'] = df['wind'] * df['temp']
+    print("[INFO] Training Tier-1 Base Estimators...")
+    
+    # 1. Random Forest Regressor
+    print(" -> Training RandomForest...")
+    rf_model = RandomForestRegressor(
+        n_estimators=100,
+        max_depth=20,
+        min_samples_split=3,
+        random_state=42,
+        n_jobs=-1
+    )
+    rf_model.fit(X_train, y_train)
 
-features = [
-    'lat', 'lon', 'temp', 'humidity', 'wind', 'hour_sin', 'hour_cos', 
-    'distance_to_major_road', 'pm2_5_lag1', 'pm2_5_lag3', 'pm2_5_lag24',
-    'rolling_6h', 'rolling_std_6h', 'temp_hum', 'wind_temp', 'month', 
-    'is_weekend', 'is_rush_hour'
-]
-df.dropna(subset=features + [target], inplace=True)
+    # 2. XGBoost Regressor
+    print(" -> Training XGBoost...")
+    xgb_model = XGBRegressor(
+        n_estimators=150,
+        learning_rate=0.05,
+        max_depth=6,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        random_state=42,
+        n_jobs=-1
+    )
+    xgb_model.fit(X_train, y_train)
 
-print("--- 3. STRATEGIC DATA SPLIT & TARGET TRANSFORMATION ---")
-df = df.sort_values('time')
-X = df[features]
-# Log1p Transformation to handle extreme PM2.5 spikes safely
-y = np.log1p(df[target]) 
+    # 3. LightGBM Regressor
+    print(" -> Training LightGBM...")
+    lgb_model = LGBMRegressor(
+        n_estimators=150,
+        learning_rate=0.05,
+        num_leaves=31,
+        max_depth=7,
+        random_state=42,
+        n_jobs=-1,
+        verbose=-1
+    )
+    lgb_model.fit(X_train, y_train)
 
-split = int(len(df) * 0.85)
-X_train, X_test = X.iloc[:split], X.iloc[split:]
-y_train, y_test = y.iloc[:split], y.iloc[split:]
-actual_y_test = np.expm1(y_test) # Keep actual values for final evaluation
+    # 4. CatBoost Regressor
+    print(" -> Training CatBoost...")
+    cb_temp_dir = os.path.join(output_dir, "catboost_temp")
+    os.makedirs(cb_temp_dir, exist_ok=True)
+    cat_model = CatBoostRegressor(
+        iterations=250,
+        learning_rate=0.05,
+        depth=6,
+        random_state=42,
+        verbose=0,
+        train_dir=cb_temp_dir
+    )
+    cat_model.fit(X_train, y_train)
 
-print(f"Train size: {len(X_train)}, Test size: {len(X_test)}")
+    print("[INFO] Training Tier-2 Stacking Ensemble Regressor...")
+    estimators = [
+        ('rf', rf_model),
+        ('xgb', xgb_model),
+        ('lgb', lgb_model),
+        ('cat', cat_model)
+    ]
+    
+    stack = StackingRegressor(
+        estimators=estimators,
+        final_estimator=Ridge(alpha=1.0),
+        cv=5,
+        n_jobs=1
+    )
+    stack.fit(X_train, y_train)
 
-print("--- 4. DEEP HYPERPARAMETER OPTIMIZATION (TSS) ---")
-tss = TimeSeriesSplit(n_splits=3)
-n_iter_search = 15 # Deep search
+    # Evaluate predictions
+    log_preds = stack.predict(X_test)
+    actual_preds = np.expm1(log_preds)
+    
+    mae = float(mean_absolute_error(actual_y_test, actual_preds))
+    rmse = float(np.sqrt(mean_squared_error(actual_y_test, actual_preds)))
+    r2 = float(r2_score(actual_y_test, actual_preds))
 
-# 1. Random Forest Tuning
-print("Tuning RandomForest...")
-rf_grid = {'n_estimators': [100, 300], 'max_depth': [20, 30, None], 'min_samples_split': [2, 5], 'min_samples_leaf': [1, 2]}
-rf_cv = RandomizedSearchCV(RandomForestRegressor(random_state=42, n_jobs=-1), rf_grid, cv=tss, n_iter=n_iter_search, random_state=42)
-rf_cv.fit(X_train, y_train)
-best_rf = rf_cv.best_estimator_
+    os.makedirs(output_dir, exist_ok=True)
+    joblib.dump(rf_model, os.path.join(output_dir, 'rf_model.pkl'))
+    joblib.dump(xgb_model, os.path.join(output_dir, 'xgb_model.pkl'))
+    joblib.dump(lgb_model, os.path.join(output_dir, 'lgb_model.pkl'))
+    joblib.dump(cat_model, os.path.join(output_dir, 'cat_model.pkl'))
+    joblib.dump(stack, os.path.join(output_dir, 'stacked_model.pkl'))
+    joblib.dump(features, os.path.join(output_dir, 'features_list.pkl'))
 
-# 2. XGBoost Tuning
-print("Tuning XGBoost...")
-xgb_grid = {'n_estimators': [200, 500], 'learning_rate': [0.01, 0.05, 0.1], 'max_depth': [5, 7, 9], 'subsample': [0.8, 1.0], 'colsample_bytree': [0.8, 1.0]}
-xgb_cv = RandomizedSearchCV(XGBRegressor(random_state=42, n_jobs=-1), xgb_grid, cv=tss, n_iter=n_iter_search, random_state=42)
-xgb_cv.fit(X_train, y_train)
-best_xgb = xgb_cv.best_estimator_
+    # Log training metrics to SQLite DB
+    try:
+        log_model_run(mae=mae, rmse=rmse, r2=r2, sample_count=len(df), status="SUCCESS", db_path=db_path)
+        print(f"[OK] Logged model run to database: MAE={mae:.2f}, RMSE={rmse:.2f}, R2={r2:.3f}")
+    except Exception as e:
+        print(f"[WARNING] Could not log model run to database: {e}")
 
-# 3. LightGBM Tuning
-print("Tuning LightGBM...")
-lgb_grid = {'n_estimators': [200, 500], 'learning_rate': [0.01, 0.05, 0.1], 'num_leaves': [31, 63], 'max_depth': [-1, 10]}
-lgb_cv = RandomizedSearchCV(LGBMRegressor(random_state=42, n_jobs=-1, verbose=-1), lgb_grid, cv=tss, n_iter=n_iter_search, random_state=42)
-lgb_cv.fit(X_train, y_train)
-best_lgb = lgb_cv.best_estimator_
+    print(f"[SUCCESS] Stacking Ensemble Trained & Saved to '{output_dir}/'. MAE: {mae:.2f}")
+    return mae
 
-# 4. CatBoost (No deep tuning needed, usually great out-of-box with fast learning)
-print("Training CatBoost...")
-best_cat = CatBoostRegressor(iterations=500, learning_rate=0.05, depth=6, random_state=42, verbose=0, thread_count=-1)
-best_cat.fit(X_train, y_train)
 
-print("--- 5. ADVANCED STACKING ENSEMBLE ---")
-estimators = [
-    ('rf', best_rf),
-    ('xgb', best_xgb),
-    ('lgb', best_lgb),
-    ('cat', best_cat)
-]
-# Ridge Meta-Learner over 4 State-of-the-Art models
-stack = StackingRegressor(estimators=estimators, final_estimator=Ridge(), n_jobs=-1)
-stack.fit(X_train, y_train)
-
-# EVALUATION (Convert back from Log-Scale)
-log_preds = stack.predict(X_test)
-actual_preds = np.expm1(log_preds)
-mae = mean_absolute_error(actual_y_test, actual_preds)
-
-joblib.dump(best_rf, 'models/rf_model.pkl')
-joblib.dump(best_xgb, 'models/xgb_model.pkl')
-joblib.dump(best_lgb, 'models/lgb_model.pkl')
-joblib.dump(best_cat, 'models/cat_model.pkl')
-joblib.dump(stack, 'models/stacked_model.pkl')
-joblib.dump(features, 'models/features_list.pkl')
-
-print(f"\n🚀 SUPERCHARGED Model Saved. Final MAE: {mae:.2f}")
-print(f"Features Used: {len(features)}")
+if __name__ == "__main__":
+    train_pipeline()

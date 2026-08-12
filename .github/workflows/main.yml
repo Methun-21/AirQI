@@ -1,4 +1,3 @@
-# .github/workflows/main.yml
 name: Hourly Data Collection and Model Training
 
 on:
@@ -14,6 +13,7 @@ jobs:
     env:
       OW_API_KEY: ${{ secrets.OW_API_KEY }}
       WAQI_TOKEN: ${{ secrets.WAQI_TOKEN }}
+      ORS_API_KEY: ${{ secrets.ORS_API_KEY }}
       
     steps:
       - name: Checkout code
@@ -29,8 +29,10 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Collect data
-        # FIX: Changed to the correct filename
+      - name: Run Pytest Automated Tests
+        run: python -m pytest tests/ -v
+
+      - name: Collect Telemetry into Database & CSV
         run: python collect_data.py
 
       - name: Commit and push changes
@@ -38,12 +40,11 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "actions-bot@github.com"
           
-          # Make sure this matches the output file from your script
-          git add delhi_aqi_data_waqi.csv
+          git add delhi_aqi_data_waqi.csv airaware.db
           
           if git diff --staged --quiet; then
-            echo "No new data to commit."
+            echo "No new telemetry to commit."
           else
-            git commit -m "Automated WAQI data collection and model training"
+            git commit -m "Automated Telemetry Collection (SQLite DB & CSV)"
             git push
           fi

@@ -1,5 +1,15 @@
-const API_BASE = "http://127.0.0.1:5001/api";
+const API_BASE = "/api";
 const map = L.map('map_container', { zoomControl: false, attributionControl: false }).setView([28.6139, 77.2090], 12);
+
+// Check backend API Health Status
+fetch(`${API_BASE}/health`)
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "healthy") {
+            console.log("AIRAWARE Engine Connected:", data);
+        }
+    })
+    .catch(err => console.warn("Backend health check warning:", err));
 
 // Custom Dark Map Theme
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -24,22 +34,7 @@ const locations = {
     "ITO Crossing": [77.2479, 28.6307]
 };
 
-// Admin Toggle Logic
-function setViewMode(mode) {
-    document.querySelectorAll('.view-toggle-option').forEach(el => el.classList.remove('active'));
-    if(mode === 'admin') {
-        document.body.classList.add('admin-mode');
-        document.getElementById('toggle-admin').classList.add('active');
-        showToast("Admin View Active: Highlighting Critical Hotspots", "fa-shield-alt");
-    } else {
-        document.body.classList.remove('admin-mode');
-        document.getElementById('toggle-citizen').classList.add('active');
-        showToast("Citizen View Active: Routine & Routing", "fa-user");
-    }
-}
-
 // Fetch Live AQI and Render Markers
-let markers = [];
 fetch(`${API_BASE}/live-aqi`)
     .then(res => res.json())
     .then(data => {
@@ -66,7 +61,7 @@ fetch(`${API_BASE}/live-aqi`)
         renderCharts(data);
     });
 
-// Charts Implementation
+// Sensor Network Bar Chart
 function renderCharts(data) {
     const ctx = document.getElementById('aqiBarChart').getContext('2d');
     new Chart(ctx, {
@@ -93,7 +88,7 @@ function renderCharts(data) {
     });
 }
 
-// Routing Logic
+// Clean Route Optimization
 let currentRoute = null;
 function getRoute() {
     const start = locations[document.getElementById("start").value];
@@ -104,7 +99,7 @@ function getRoute() {
     compBox.style.display = "none";
     compBox.innerHTML = ""; 
     
-    showToast("Calculating ML-optimized paths...", "fa-route");
+    showToast("Calculating ML-optimized spatial paths...", "fa-route");
 
     fetch(`${API_BASE}/routes`, {
         method: "POST",
@@ -113,6 +108,10 @@ function getRoute() {
     })
     .then(res => res.json())
     .then(data => {
+        if (!data || !data.features || data.features.length === 0) {
+            showToast("Could not calculate route for selected points", "fa-exclamation-triangle");
+            return;
+        }
         currentRoute = L.geoJSON(data, {
             style: (f) => {
                 if (f.properties.route_type.includes("Cleanest")) {
@@ -141,11 +140,11 @@ function getRoute() {
                             </div>
                             <div>
                                 <div style="font-weight: 700; font-size: 0.95rem; color: #fff;">${f.properties.route_type}</div>
-                                <div style="font-size: 0.75rem; color: var(--text-secondary);">Avg PM2.5: <strong style="color: ${iconColor};">${f.properties.avg_pollution}</strong></div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary);">Avg PM2.5: <strong style="color: ${iconColor};">${f.properties.avg_pollution} µg/m³</strong></div>
                             </div>
                         </div>
                         <div style="background: ${iconColor}; color: ${isCombo ? 'white' : 'black'}; padding: 4px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.05em;">
-                            ${f.properties.route_type.includes("Cleanest") ? "RECOMMENDED" : "AVOID"}
+                            ${f.properties.route_type.includes("Cleanest") ? "RECOMMENDED" : "HIGH EXPOSURE"}
                         </div>
                     </div>
                 `;
@@ -153,27 +152,14 @@ function getRoute() {
         }).addTo(map);
 
         compBox.style.display = "flex";
-        map.fitBounds(currentRoute.getBounds(), { padding: [50, 50] });
+        if (currentRoute.getBounds().isValid()) {
+            map.fitBounds(currentRoute.getBounds(), { padding: [50, 50] });
+        }
     })
     .catch(() => showToast("Error connecting to routing engine", "fa-exclamation-triangle"));
 }
 
-// Health Engine
-function getHealthAdvice() {
-    const age = document.getElementById("age").value;
-    const asthma = document.getElementById("asthma").checked;
-    fetch(`${API_BASE}/health-advice`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ age: Number(age), asthma, aqi: 200 })
-    })
-    .then(res => res.json())
-    .then(d => {
-        showToast(`Advice: ${d.activity} | Mask: ${d.mask}`, "fa-stethoscope");
-    });
-}
-
-// Simulator
+// Exposure Simulator
 let simChart = null;
 function simulateExposure() {
     const location = document.getElementById('sim-location').value;
@@ -189,7 +175,7 @@ function simulateExposure() {
         document.getElementById('sim-result').innerHTML = `
         <div class="health-advice-box">
             <div class="health-stat"><div>LUNG AGING</div><div style="color:#ef4444;">+${data.base_lung_aging_years} yrs</div></div>
-            <div class="health-stat"><div>RISK REDUCTION</div><div style="color:#10b981;">-${data.what_if_reduction}%</div></div>
+            <div class="health-stat"><div>EXPOSURE RATE</div><div style="color:#10b981;">${data.base_exposure_per_day} AQI/d</div></div>
         </div>
         <p style="margin-top:10px; font-size:0.8rem; color:var(--text-secondary);">${data.base_risk_reduction_tip}</p>
         `;
@@ -212,7 +198,7 @@ function simulateExposure() {
     });
 }
 
-// Chatbot
+// Chatbot Logic
 function toggleChatbot() {
     const chat = document.getElementById('chatbot');
     chat.style.display = chat.style.display === 'flex' ? 'none' : 'flex';
@@ -254,7 +240,7 @@ function showToast(message, icon = "fa-info-circle") {
     }, 3500);
 }
 
-// --- LIVE ML PREDICTION ON CLICK ---
+// Live ML Inference on Map Click
 let livePredictionMarker = null;
 map.on('click', function(e) {
     const lat = e.latlng.lat;
@@ -303,7 +289,7 @@ map.on('click', function(e) {
                     <i class="fas fa-robot" style="color: var(--accent);"></i> Live ML Inference
                 </div>
                 <div style="font-size: 1.6rem; font-weight: 800; color: ${color}; line-height:1;">
-                    ${pm25}
+                    ${pm25} <span style="font-size:0.8rem; font-weight:600; color:#64748b;">µg/m³</span>
                 </div>
                 <div style="font-size: 0.8rem; font-weight: 700; color: #64748b; margin-bottom: 10px; text-transform:uppercase; letter-spacing:0.05em;">
                     ${status}

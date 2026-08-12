@@ -1,64 +1,113 @@
 # AIRAWARE: Predictive Micro-Zoning Engine 🌍💨
 
-<div align="center">
-  <img src="assets/dashboard_mockup.png" alt="AIRAWARE Dashboard" width="100%">
-</div>
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=flat&logo=python&logoColor=white)](https://python.org)
+[![Flask Framework](https://img.shields.io/badge/Framework-Flask-000000?style=flat&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![Machine Learning](https://img.shields.io/badge/ML-Stacking%20Ensemble-10B981?style=flat&logo=scikitlearn&logoColor=white)](https://scikit-learn.org)
+[![Testing](https://img.shields.io/badge/Tests-Pytest-0A9EDC?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**AIRAWARE** is an advanced, AI-driven Smart City platform designed to transform how urban governments and citizens manage air quality. Built as a solution for Delhi's winter smog crisis, AIRAWARE moves beyond reactive "blanket bans" by providing **Predictive Micro-Zoning**, hyper-local ML forecasting, and health-optimized dynamic routing.
+**AIRAWARE** is an end-to-end, AI-driven micro-climate forecasting and dynamic traffic management platform built for atmospheric urban pollution control in Delhi. Moving beyond reactive city-wide averages, AIRAWARE uses a multi-stage **Stacking Machine Learning Ensemble** to predict hyper-local $PM_{2.5}$ formation hours in advance.
 
-## 🚀 The Core Problem & Solution
+---
 
-**The Problem:** Traditional air quality management is reactive and relies on city-wide averages. Governments deploy anti-smog resources and enforce traffic bans *after* an entire city reaches severe pollution levels, causing massive economic disruption while failing to address hyper-local "gas chambers."
+## 🎯 Key Capabilities
 
-**The Solution:** AIRAWARE acts as a Predictive Micro-Zoning Engine. Using a highly optimized **Stacking Machine Learning Ensemble**, it predicts *where* specific micro-hotspots will form hours in advance. This enables:
-1. **Pre-deployment** of municipal resources (e.g., anti-smog water cannons) directly to the predicted coordinates.
-2. **Dynamic Traffic Diversion** (The "Clean Route" API) to automatically reroute non-essential traffic away from forming hotspots before the pollution concentrates into a hazard.
+- **Hyper-Local $PM_{2.5}$ Micro-Zoning:** Real-time spatial inference based on geodesic distance to major traffic corridors, 48-hour rolling atmospheric lags, and cyclical temporal encodings.
+- **Health-Optimized Clean Routing API:** Computes and compares spatial routes between origins and destinations, recommending paths that minimize cumulative $PM_{2.5}$ exposure.
+- **Personal Exposure & Lung Impact Simulator:** Quantitative actuarial exposure model projecting annual pulmonary strain based on daily outdoor routines.
+- **Dual-Mode System Interface:** Seamless toggle between **Citizen View** (routing & health tips) and **Government/Admin Mode** (hotspot identification for anti-smog deployment).
+- **Automated MLOps Pipeline:** Scheduled CI/CD via GitHub Actions for continuous data ingestion, automated retraining, and model evaluation.
 
 ---
 
 ## 🧠 Machine Learning Architecture
 
-The predictive core of AIRAWARE is built on a sophisticated Stacking Ensemble designed to handle spatiotemporal atmospheric volatility.
+AIRAWARE employs a two-tier **Stacking Ensemble Regressor** designed to model nonlinear spatiotemporal atmospheric volatility.
 
-- **Base Learners:** `XGBoost`, `LightGBM`, `CatBoost`, `RandomForest`
-- **Meta-Learner:** `Ridge Regression`
-- **Live Inference Engine:** Integrates real-time OpenWeatherMap thermodynamics (temperature, humidity, wind speed) with live WAQI metrics.
-- **Spatiotemporal Features:** Includes Geodesic distance to major traffic junctions (`distance_to_major_road`), historical 48-hour lags, and 6-hour volatility standard deviations to immediately detect and adapt to sudden anomaly spikes (like fires).
+```
+       [ Input Features (18 Spatiotemporal & Meteorological Features) ]
+                                       │
+         ┌─────────────────────────────┼─────────────────────────────┐
+         ▼                             ▼                             ▼
+  ┌──────────────┐              ┌──────────────┐              ┌──────────────┐
+  ┌───┴──────────┴───┐          ┌───┴──────────┴───┐          ┌───┴──────────┴───┐
+  │  Random Forest   │          │     XGBoost      │          │    LightGBM      │
+  │ (100 Trees, d=20)│          │ (150 Trees, lr=.05)│        │ (150 Trees, lr=.05)│
+  └──────────────────┘          └──────────────────┘          └──────────────────┘
+         │                             │                             │
+         └─────────────────────────────┼─────────────────────────────┘
+                                       ▼
+                            ┌─────────────────────┐
+                            │  CatBoost Regressor │
+                            │ (250 Iterations)    │
+                            └──────────┬──────────┘
+                                       │
+                                       ▼  (Out-of-Fold Predictions)
+                            ┌─────────────────────┐
+                            │   Ridge Regressor   │  <-- Tier-2 Meta Learner
+                            └──────────┬──────────┘
+                                       │
+                                       ▼
+                       [ Predicted Hyper-Local PM2.5 ]
+```
 
-### Performance Metrics (Testing Split)
+### Feature Engineering Pipeline (`features.py`)
+- **Geospatial Proximity:** Geodesic distance to 8 major arterial transport corridors in Delhi (`distance_to_major_road`).
+- **Cyclical Time Encoding:** Sine/Cosine transform ($\sin(2\pi \cdot \text{hour}/24)$, $\cos(2\pi \cdot \text{hour}/24)$) to model diurnal atmospheric inversion.
+- **Spatiotemporal Lags:** 1h, 3h, 24h historical memory lags with 6-hour rolling mean and standard deviation volatility metrics.
+- **Thermodynamic Interactions:** Cross-features ($Temp \times Humidity$, $Wind \times Temp$).
+
+### Benchmark Model Evaluation
 - **MAE (Mean Absolute Error):** `17.54 µg/m³`
-- **RMSE:** `29.34 µg/m³`
+- **RMSE (Root Mean Squared Error):** `29.34 µg/m³`
 - **R² Score:** `0.696`
 
 ---
 
-## 🛠️ Features & Functionality
+## 🛠️ Tech Stack
 
-### 1. Live "Click-to-Predict" Inference
-Citizens can click anywhere on the Interactive Map. The backend immediately fetches live thermodynamics and base PM2.5 levels, feeding them into the ML pipeline to return a hyper-local PM2.5 prediction in real-time.
-
-### 2. Health-Optimized Routing ("Cleanest vs Fastest")
-A proprietary API that calculates the geodesic path between an origin and destination, running continuous ML inference along the path. It returns the "Cleanest Route", ensuring vulnerable citizens minimize their PM2.5 exposure during commutes.
-
-### 3. Government / Admin Dashboard Mode
-A specialized UI toggle that shifts the platform into "Admin Mode", highlighting critical predicted hotspots in red to assist traffic authorities in dynamic rerouting and resource allocation.
-
-### 4. MLOps (Continuous Training)
-Fully automated Continuous Training pipeline using GitHub Actions. The model autonomously retrains itself on newly ingested CSV data on a scheduled basis, adapting to shifting atmospheric and climatic trends without human intervention.
+- **Backend:** Python 3.12, Flask, Geopy, Pandas, NumPy, Scikit-Learn
+- **Machine Learning:** XGBoost, LightGBM, CatBoost, Joblib
+- **Frontend:** HTML5, Modern Vanilla CSS (Glassmorphism), JavaScript (ES6+), Leaflet.js, Chart.js
+- **Testing & Quality:** Pytest, Pytest-Flask
+- **DevOps / MLOps:** GitHub Actions (CI/CT Workflows)
+- **External Data Providers:** World Air Quality Index (WAQI), OpenWeatherMap, OpenRouteService
 
 ---
 
-## 💻 Tech Stack
+## 🏗️ Project Structure
 
-- **Backend:** Python, Flask, Pandas, NumPy, Scikit-Learn
-- **Machine Learning:** XGBoost, LightGBM, CatBoost
-- **Frontend:** Vanilla JavaScript, HTML5, Deep Glassmorphism CSS, Leaflet.js
-- **DevOps/MLOps:** GitHub Actions (CI/CT)
-- **APIs:** OpenWeatherMap, WAQI, OpenRouteService
+```
+AIRAWARE/
+├── .github/workflows/         # Continuous Integration & Training Workflows
+│   ├── main.yml               # Hourly data collection pipeline
+│   └── retrain_model.yml      # Scheduled weekly MLOps model retraining
+├── models/                    # Serialized Machine Learning artifacts (.pkl)
+│   ├── stacked_model.pkl      # Stacking Ensemble meta-model
+│   └── features_list.pkl      # Standardized feature schema
+├── static/                    # Frontend assets
+│   ├── css/style.css          # Glassmorphic UI Design System
+│   └── js/main.js             # Map rendering, chart telemetry & API logic
+├── templates/
+│   └── index.html             # Single-Page Web Application layout
+├── tests/                     # Automated Test Suite
+│   ├── test_api.py            # Flask API endpoint integration tests
+│   ├── test_features.py       # Feature engineering unit tests
+│   └── test_ml.py             # ML inference & pipeline unit tests
+├── .env.example               # Template environment configuration
+├── .gitignore                 # Standard repository ignores
+├── app.py                     # Flask Web Server & REST API Gateway
+├── collect_data.py            # Automated sensor telemetry collection
+├── evaluate_accuracy.py       # Model accuracy benchmark script
+├── features.py                # Centralized Feature Engineering Engine
+├── train_model.py             # Model training & ensemble optimization
+├── requirements.txt           # Project dependencies
+└── LICENSE                    # MIT Open Source License
+```
 
 ---
 
-## ⚙️ Installation & Usage
+## ⚙️ Quickstart & Local Setup
 
 ### 1. Clone the Repository
 ```bash
@@ -66,12 +115,14 @@ git clone https://github.com/Methun-21/AirQI.git
 cd AirQI
 ```
 
-### 2. Set Up the Virtual Environment
+### 2. Set Up Virtual Environment
 ```bash
+# Windows (PowerShell)
 python -m venv .venv
-# On Windows PowerShell:
 .\.venv\Scripts\Activate.ps1
-# On Mac/Linux:
+
+# Linux / MacOS
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
@@ -80,7 +131,18 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Run the Application
+### 4. Configure Environment Variables
+Copy `.env.example` to `.env` and populate your API credentials (the app includes fallback modes if keys are omitted):
+```bash
+cp .env.example .env
+```
+
+### 5. Run Automated Tests
+```bash
+python -m pytest tests/ -v
+```
+
+### 6. Start the Flask Server
 ```bash
 python app.py
 ```
@@ -88,8 +150,21 @@ Open your browser and navigate to `http://127.0.0.1:5001/`
 
 ---
 
-## 📄 Academic & Professional Context
-This project is being developed into a formal research paper titled:
-*"Predictive Micro-Zoning and Dynamic Traffic Diversion for Urban Air Quality Management using Stacking Ensembles: A Case Study in Delhi."*
+## 🔌 API Reference
 
-Developed by Methunraj A.
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `GET /` | `GET` | Renders main application Web UI |
+| `GET /api/health` | `GET` | System health check and model loading status |
+| `GET /api/live-aqi` | `GET` | Returns live sensor matrix and AQI readings |
+| `POST /api/routes` | `POST` | Calculates fastest vs cleanest spatial route |
+| `POST /api/predict-point` | `POST` | Click-to-predict ML inference for latitude/longitude |
+| `POST /api/health-advice` | `POST` | Generates tailored medical advice based on user profile |
+| `POST /api/simulator` | `POST` | Projections for annual lung exposure & mitigation impact |
+| `POST /api/chat` | `POST` | AirBot natural language assistant queries |
+
+---
+
+## 📄 License & Attribution
+
+Distributed under the **MIT License**. Developed by **Methunraj A.**
