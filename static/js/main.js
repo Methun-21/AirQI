@@ -48,13 +48,17 @@ fetch(`${API_BASE}/live-aqi`)
             });
 
             L.marker([row.lat, row.lon], { icon: markerIcon })
-                .bindPopup(`<div style="color:#0f172a; padding:8px;">
-                                <div style="font-weight: 800; font-size: 1.1rem; border-bottom: 1px solid #e2e8f0; margin-bottom: 5px; padding-bottom: 5px;">${row.location}</div>
-                                <div style="display:flex; justify-content: space-between; align-items:center;">
-                                    <span>AQI</span>
-                                    <strong style="color:${color}; font-size:1.2rem;">${row.raw_aqi}</strong>
+                .bindPopup(`<div style="color:#0f172a; padding:8px; font-family:'Outfit',sans-serif;">
+                                <div style="font-weight: 800; font-size: 1.1rem; border-bottom: 1px solid #e2e8f0; margin-bottom: 6px; padding-bottom: 5px;">${row.location}</div>
+                                <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:4px;">
+                                    <span style="font-size:0.85rem; color:#475569;">AQI Index</span>
+                                    <strong style="color:${color}; font-size:1.1rem;">${row.raw_aqi}</strong>
                                 </div>
-                                <small style="color: #64748b; display:block; margin-top:5px;">${row.aqi <= 2 ? 'Clean Air' : 'Hazardous'}</small>
+                                <div style="display:flex; justify-content: space-between; align-items:center;">
+                                    <span style="font-size:0.85rem; color:#475569;">PM2.5 Concentration</span>
+                                    <strong style="color:#0f172a; font-size:1.0rem;">${row.pm2_5 || Math.round(row.raw_aqi * 0.65)} µg/m³</strong>
+                                </div>
+                                <small style="color: #64748b; display:block; margin-top:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">${row.aqi <= 2 ? 'Clean Air' : 'Hazardous Inversion'}</small>
                             </div>`)
                 .addTo(map);
         });
@@ -274,6 +278,7 @@ map.on('click', function(e) {
         let color = pm25 <= 50 ? '#10b981' : pm25 <= 150 ? '#f59e0b' : '#ef4444';
         let status = pm25 <= 50 ? 'Clean Air' : pm25 <= 150 ? 'Moderate Risk' : 'Hazardous';
 
+        let estAqi = data.calculated_aqi || Math.round(pm25 * 1.35);
         map.removeLayer(livePredictionMarker);
         livePredictionMarker = L.marker([lat, lon], {
             icon: L.divIcon({
@@ -284,15 +289,15 @@ map.on('click', function(e) {
             })
         })
         .bindPopup(`
-            <div style="color: #0f172a; padding: 5px; min-width: 160px; font-family: 'Outfit', sans-serif;">
-                <div style="font-weight: 800; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 8px; display:flex; align-items:center; gap:6px;">
-                    <i class="fas fa-robot" style="color: var(--accent);"></i> Live ML Inference
+            <div style="color: #0f172a; padding: 5px; min-width: 170px; font-family: 'Outfit', sans-serif;">
+                <div style="font-weight: 800; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 8px; display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-robot" style="color: var(--accent);"></i> Live ML Forecast
                 </div>
-                <div style="font-size: 1.6rem; font-weight: 800; color: ${color}; line-height:1;">
-                    ${pm25} <span style="font-size:0.8rem; font-weight:600; color:#64748b;">µg/m³</span>
+                <div style="font-size: 1.5rem; font-weight: 800; color: ${color}; line-height:1; margin-bottom:2px;">
+                    ${pm25} <span style="font-size:0.75rem; font-weight:600; color:#64748b;">µg/m³</span>
                 </div>
-                <div style="font-size: 0.8rem; font-weight: 700; color: #64748b; margin-bottom: 10px; text-transform:uppercase; letter-spacing:0.05em;">
-                    ${status}
+                <div style="font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 8px;">
+                    Est. AQI Index: <strong style="color: ${color}; font-size:0.95rem;">${estAqi}</strong> (${status})
                 </div>
                 <div style="font-size: 0.85rem; color: #475569; display:flex; gap:10px; background:#f1f5f9; padding:6px; border-radius:8px;">
                     <span><i class="fas fa-temperature-high" style="color:#f59e0b;"></i> ${data.live_weather.temp}°C</span>

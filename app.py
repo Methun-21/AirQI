@@ -214,6 +214,24 @@ def health_check():
         "stations_monitored": len(DELHI_LOCATIONS)
     })
 
+def pm25_to_aqi(pm25):
+    """Converts PM2.5 mass concentration (ug/m3) to US EPA Air Quality Index (AQI 0-500)."""
+    c = float(pm25)
+    if c <= 12.0:
+        return int((50 / 12.0) * c)
+    elif c <= 35.4:
+        return int(((100 - 51) / (35.4 - 12.1)) * (c - 12.1) + 51)
+    elif c <= 55.4:
+        return int(((150 - 101) / (55.4 - 35.5)) * (c - 35.5) + 101)
+    elif c <= 150.4:
+        return int(((200 - 151) / (150.4 - 55.5)) * (c - 55.5) + 151)
+    elif c <= 250.4:
+        return int(((300 - 201) / (250.4 - 150.5)) * (c - 150.5) + 201)
+    elif c <= 350.4:
+        return int(((400 - 301) / (350.4 - 250.5)) * (c - 250.5) + 301)
+    else:
+        return int(((500 - 401) / (500.4 - 350.5)) * (c - 350.5) + 401)
+
 @app.route("/api/live-aqi", methods=["GET"])
 @limiter.limit("30 per minute")
 def live_aqi():
@@ -221,6 +239,7 @@ def live_aqi():
     result = []
     for name, (lat, lon) in DELHI_LOCATIONS.items():
         raw_aqi = 150
+        pm25_val = 120.0
         if WAQI_TOKEN:
             try:
                 waqi = requests.get(
@@ -229,20 +248,25 @@ def live_aqi():
                 ).json()
                 if waqi.get("status") == "ok":
                     raw_aqi = waqi["data"]["aqi"]
+                    iaqi = waqi["data"].get("iaqi", {})
+                    pm25_val = iaqi.get("pm25", {}).get("v", raw_aqi)
             except Exception:
                 pass
 
         if raw_aqi == 150:
             raw_aqi = 120 + (abs(hash(name)) % 80)
-            
+            pm25_val = float(raw_aqi) * 0.65
+
         result.append({
             "location": name,
             "lat": lat,
             "lon": lon,
             "aqi": waqi_to_aqi_category(raw_aqi),
-            "raw_aqi": raw_aqi
+            "raw_aqi": raw_aqi,
+            "pm2_5": round(float(pm25_val), 1)
         })
-        station_history[name].append(raw_aqi)
+        # Consistently store PM2.5 mass concentration (ug/m3) for time-series features
+        station_history[name].append(pm25_val)
         
     current_aqi_data = {r["location"]: r for r in result}
     return jsonify(result)
@@ -370,6 +394,7 @@ def predict_point():
         "lat": lat,
         "lon": lon,
         "predicted_pm25": round(pred_pm25, 1),
+        "calculated_aqi": pm25_to_aqi(pred_pm25),
         "live_weather": {"temp": temp, "humidity": humidity, "wind": wind},
         "nearest_station": station_name
     })
