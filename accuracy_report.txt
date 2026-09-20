@@ -1,18 +1,18 @@
 AIRAWARE - Model Accuracy Report
 ================================
-Test Samples: 4922
-MAE (Mean Absolute Error): 18.23 ug/m3
-RMSE (Root Mean Squared Error): 26.59 ug/m3
-R^2 Score: 0.570
+Test Samples: 4989
+MAE (Mean Absolute Error): 18.73 ug/m3
+RMSE (Root Mean Squared Error): 26.92 ug/m3
+R^2 Score: 0.565
 
 Sample Predictions (Actual vs Predicted):
-Actual: 153.0 | Predicted: 89.5 (Diff: 63.5)
-Actual: 122.0 | Predicted: 138.3 (Diff: 16.3)
-Actual: 151.0 | Predicted: 97.3 (Diff: 53.7)
-Actual: 151.0 | Predicted: 97.1 (Diff: 53.9)
-Actual: 151.0 | Predicted: 95.6 (Diff: 55.4)
-Actual: 112.0 | Predicted: 102.2 (Diff: 9.8)
-Actual: 9.0 | Predicted: 60.8 (Diff: 51.8)
-Actual: 163.0 | Predicted: 137.7 (Diff: 25.3)
-Actual: 9.0 | Predicted: 66.8 (Diff: 57.8)
-Actual: 82.0 | Predicted: 127.7 (Diff: 45.7)
+Actual: 160.0 | Predicted: 148.1 (Diff: 11.9)
+Actual: 160.0 | Predicted: 145.3 (Diff: 14.7)
+Actual: 160.0 | Predicted: 147.9 (Diff: 12.1)
+Actual: 160.0 | Predicted: 145.7 (Diff: 14.3)
+Actual: 160.0 | Predicted: 147.9 (Diff: 12.1)
+Actual: 160.0 | Predicted: 144.7 (Diff: 15.3)
+Actual: 160.0 | Predicted: 145.0 (Diff: 15.0)
+Actual: 160.0 | Predicted: 146.6 (Diff: 13.4)
+Actual: 160.0 | Predicted: 145.9 (Diff: 14.1)
+Actual: 160.0 | Predicted: 146.0 (Diff: 14.0)
