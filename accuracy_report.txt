@@ -1,18 +1,42 @@
-AIRAWARE - Model Accuracy Report
-================================
-Test Samples: 5052
-MAE (Mean Absolute Error): 18.70 ug/m3
-RMSE (Root Mean Squared Error): 27.83 ug/m3
-R^2 Score: 0.588
+=========================================================================
+                AIRAWARE - RIGOROUS BENCHMARK & ABLATION REPORT          
+=========================================================================
+Generated: 2026-09-28 15:29:07
+Total Dataset: 28529 records | Train: 24249 | Out-of-Time Test: 4280
 
-Sample Predictions (Actual vs Predicted):
-Actual: 87.0 | Predicted: 91.1 (Diff: 4.1)
-Actual: 78.0 | Predicted: 111.0 (Diff: 33.0)
-Actual: 78.0 | Predicted: 87.1 (Diff: 9.1)
-Actual: 87.0 | Predicted: 81.1 (Diff: 5.9)
-Actual: 160.0 | Predicted: 157.1 (Diff: 2.9)
-Actual: 87.0 | Predicted: 80.9 (Diff: 6.1)
-Actual: 99.0 | Predicted: 98.6 (Diff: 0.4)
-Actual: 68.0 | Predicted: 57.0 (Diff: 11.0)
-Actual: 99.0 | Predicted: 98.5 (Diff: 0.5)
-Actual: 87.0 | Predicted: 81.0 (Diff: 6.0)
+1. OUT-OF-TIME TEMPORAL SPLIT EVALUATION (Ablation vs Baselines)
+-------------------------------------------------------------------------
+Model / Architecture             | MAE (µg/m³)  | RMSE (µg/m³)   | R² Score  
+-------------------------------------------------------------------------
+1. Naive Persistence (Lag-1)     | 20.64        | 32.40          | 0.408     
+2. Seasonal-Naive Climatology    | 99.12        | 110.35         | -5.870    
+3. LightGBM (Primary)            | 19.14        | 26.05          | 0.617     
+4. Stacking Ensemble (4-Model)   | 19.29        | 26.30          | 0.610     
+-------------------------------------------------------------------------
+
+2. UNCERTAINTY QUANTIFICATION (Quantile LightGBM P10-P90)
+-------------------------------------------------------------------------
+Empirical 80% Prediction Interval Coverage (PICP): 72.36%
+Mean Prediction Interval Width (MPIW):            54.59 µg/m³
+
+3. LEAVE-ONE-STATION-OUT (LOSO) SPATIAL GENERALIZATION
+-------------------------------------------------------------------------
+Held-Out Station           | LightGBM MAE   | LightGBM R² 
+-------------------------------------------------------------------------
+Connaught Place            | 18.10          | 0.917       
+Karol Bagh                 | 18.08          | 0.916       
+Chandni Chowk              | 17.97          | 0.938       
+Dwarka                     | 17.17          | 0.932       
+Saket                      | 12.58          | 0.934       
+Rohini                     | 19.30          | 0.944       
+Lajpat Nagar               | 26.88          | 0.877       
+Mayur Vihar                | 17.30          | 0.934       
+Vasant Kunj                | 12.50          | 0.935       
+Delhi University           | 17.46          | 0.949       
+-------------------------------------------------------------------------
+OVERALL SPATIAL LOSO       | 17.73          | 0.929       
+
+4. SMOG-SPIKE SUBSET EVALUATION (PM2.5 > 150 µg/m³)
+-------------------------------------------------------------------------
+LightGBM MAE on Spikes:     24.31 µg/m³ (vs Persistence: 19.24 µg/m³)
+=========================================================================
