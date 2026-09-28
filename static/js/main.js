@@ -6,7 +6,7 @@ fetch(`${API_BASE}/health`)
     .then(res => res.json())
     .then(data => {
         if (data.status === "healthy") {
-            console.log("AIRAWARE Engine Connected:", data);
+            console.log("AIRAWARE Probabilistic Spatial Engine Connected:", data);
         }
     })
     .catch(err => console.warn("Backend health check warning:", err));
@@ -34,12 +34,12 @@ const locations = {
     "ITO Crossing": [77.2479, 28.6307]
 };
 
-// Fetch Live AQI and Render Markers
+// Fetch Live Telemetry and Render Markers
 fetch(`${API_BASE}/live-aqi`)
     .then(res => res.json())
     .then(data => {
         data.forEach(row => {
-            let color = row.aqi <= 2 ? '#10b981' : row.aqi === 3 ? '#f59e0b' : '#ef4444';
+            let color = row.pm2_5 <= 60 ? '#10b981' : row.pm2_5 <= 150 ? '#f59e0b' : '#ef4444';
             let markerIcon = L.divIcon({
                 className: 'custom-div-icon',
                 html: `<div style="background-color: ${color}; width: 14px; height: 14px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 12px ${color};" class="aqi-marker-active"></div>`,
@@ -48,17 +48,16 @@ fetch(`${API_BASE}/live-aqi`)
             });
 
             L.marker([row.lat, row.lon], { icon: markerIcon })
-                .bindPopup(`<div style="color:#0f172a; padding:8px; font-family:'Outfit',sans-serif;">
-                                <div style="font-weight: 800; font-size: 1.1rem; border-bottom: 1px solid #e2e8f0; margin-bottom: 6px; padding-bottom: 5px;">${row.location}</div>
+                .bindPopup(`<div style="color:#f8fafc; padding:6px; font-family:'Outfit',sans-serif;">
+                                <div style="font-weight: 800; font-size: 1.05rem; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; padding-bottom: 4px;">${row.location}</div>
                                 <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:4px;">
-                                    <span style="font-size:0.85rem; color:#475569;">AQI Index</span>
-                                    <strong style="color:${color}; font-size:1.1rem;">${row.raw_aqi}</strong>
+                                    <span style="font-size:0.8rem; color:#94a3b8;">PM2.5 Mass</span>
+                                    <strong style="color:${color}; font-size:1.1rem;">${row.pm2_5} µg/m³</strong>
                                 </div>
                                 <div style="display:flex; justify-content: space-between; align-items:center;">
-                                    <span style="font-size:0.85rem; color:#475569;">PM2.5 Concentration</span>
-                                    <strong style="color:#0f172a; font-size:1.0rem;">${row.pm2_5 || Math.round(row.raw_aqi * 0.65)} µg/m³</strong>
+                                    <span style="font-size:0.8rem; color:#94a3b8;">Observed AQI</span>
+                                    <strong style="color:#f8fafc; font-size:0.95rem;">${row.aqi}</strong>
                                 </div>
-                                <small style="color: #64748b; display:block; margin-top:6px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">${row.aqi <= 2 ? 'Clean Air' : 'Hazardous Inversion'}</small>
                             </div>`)
                 .addTo(map);
         });
@@ -71,13 +70,13 @@ function renderCharts(data) {
     new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: data.slice(0, 5).map(d => d.location.split(' ')[0]),
+            labels: data.slice(0, 6).map(d => d.location.split(' ')[0]),
             datasets: [{
-                label: 'AQI Level',
-                data: data.slice(0, 5).map(d => d.raw_aqi),
-                backgroundColor: data.slice(0, 5).map(d => d.raw_aqi > 200 ? '#ef4444' : '#0ea5e9'),
-                borderRadius: 8,
-                barThickness: 25
+                label: 'PM2.5 (µg/m³)',
+                data: data.slice(0, 6).map(d => d.pm2_5),
+                backgroundColor: data.slice(0, 6).map(d => d.pm2_5 > 150 ? '#ef4444' : d.pm2_5 > 60 ? '#f59e0b' : '#10b981'),
+                borderRadius: 6,
+                barThickness: 20
             }]
         },
         options: {
@@ -92,7 +91,7 @@ function renderCharts(data) {
     });
 }
 
-// Clean Route Optimization
+// Clean Route Optimization with Uncertainty Intervals
 let currentRoute = null;
 function getRoute() {
     const start = locations[document.getElementById("start").value];
@@ -103,7 +102,7 @@ function getRoute() {
     compBox.style.display = "none";
     compBox.innerHTML = ""; 
     
-    showToast("Calculating ML-optimized spatial paths...", "fa-route");
+    showToast("Running probabilistic quantile route inference...", "fa-route");
 
     fetch(`${API_BASE}/routes`, {
         method: "POST",
@@ -119,36 +118,36 @@ function getRoute() {
         currentRoute = L.geoJSON(data, {
             style: (f) => {
                 if (f.properties.route_type.includes("Cleanest")) {
-                    return { color: '#10b981', weight: 6, opacity: 0.9, lineCap: 'round' }; 
+                    return { color: '#10b981', weight: 6, opacity: 0.95, lineCap: 'round' }; 
                 } else if (f.properties.route_type.includes("Fastest")) {
-                    return { color: '#ef4444', weight: 4, opacity: 0.6, dashArray: '5, 10', lineCap: 'round' }; 
+                    return { color: '#ef4444', weight: 4, opacity: 0.7, dashArray: '6, 8', lineCap: 'round' }; 
                 }
-                return { color: '#0ea5e9', weight: 4, opacity: 0.8 };
+                return { color: '#0ea5e9', weight: 5, opacity: 0.9 };
             },
             onEachFeature: (f, l) => {
-                let isCombo = f.properties.route_type === "Fastest & Cleanest";
-                let cardColor = f.properties.route_type.includes("Cleanest") ? "rgba(16, 185, 129, 0.1)" : "rgba(239, 68, 68, 0.1)";
-                let iconColor = f.properties.route_type.includes("Cleanest") ? "#10b981" : "#ef4444";
-                let iconType = f.properties.route_type.includes("Cleanest") ? "fa-leaf" : "fa-clock";
+                let isClean = f.properties.route_type.includes("Cleanest") || f.properties.route_type.includes("Fastest & Cleanest");
+                let cardColor = isClean ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)";
+                let iconColor = isClean ? "#10b981" : "#ef4444";
+                let iconType = isClean ? "fa-shield-alt" : "fa-tachometer-alt";
 
-                if (isCombo) {
-                    cardColor = "linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(14, 165, 233, 0.15))";
-                    iconType = "fa-star";
-                }
+                let ci = f.properties.ci_80 || [f.properties.expected_pm25, f.properties.worst_case_pm25];
 
                 compBox.innerHTML += `
-                    <div style="background: ${cardColor}; border: 1px solid ${iconColor}40; padding: 14px; border-radius: 16px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="background: ${cardColor}; border: 1px solid ${iconColor}40; padding: 12px 14px; border-radius: 14px; display: flex; align-items: center; justify-content: space-between;">
                         <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="width: 36px; height: 36px; border-radius: 18px; background: rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center;">
-                                <i class="fas ${iconType}" style="color: ${iconColor}; font-size: 1.1rem;"></i>
+                            <div style="width: 34px; height: 34px; border-radius: 17px; background: rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center;">
+                                <i class="fas ${iconType}" style="color: ${iconColor}; font-size: 1.0rem;"></i>
                             </div>
                             <div>
-                                <div style="font-weight: 700; font-size: 0.95rem; color: #fff;">${f.properties.route_type}</div>
-                                <div style="font-size: 0.75rem; color: var(--text-secondary);">Avg PM2.5: <strong style="color: ${iconColor};">${f.properties.avg_pollution} µg/m³</strong></div>
+                                <div style="font-weight: 700; font-size: 0.9rem; color: #fff;">${f.properties.route_type}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                                    Expected: <strong style="color: ${iconColor};">${f.properties.expected_pm25} µg/m³</strong> 
+                                    <span style="color:#94a3b8; font-size:0.7rem;">[80% CI: ${ci[0]}–${ci[1]}]</span>
+                                </div>
                             </div>
                         </div>
-                        <div style="background: ${iconColor}; color: ${isCombo ? 'white' : 'black'}; padding: 4px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.05em;">
-                            ${f.properties.route_type.includes("Cleanest") ? "RECOMMENDED" : "HIGH EXPOSURE"}
+                        <div style="background: ${iconColor}; color: ${isClean ? 'black' : 'white'}; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.05em;">
+                            ${isClean ? (f.properties.exposure_reduction_pct ? `-${f.properties.exposure_reduction_pct}% DOSE` : 'OPTIMAL') : 'HIGH RISK'}
                         </div>
                     </div>
                 `;
@@ -161,72 +160,6 @@ function getRoute() {
         }
     })
     .catch(() => showToast("Error connecting to routing engine", "fa-exclamation-triangle"));
-}
-
-// Exposure Simulator
-let simChart = null;
-function simulateExposure() {
-    const location = document.getElementById('sim-location').value;
-    const hours = parseFloat(document.getElementById('sim-hours').value);
-
-    fetch(`${API_BASE}/simulator`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ routine: [{ location, duration_hours: hours }], years: 1 })
-    })
-    .then(res => res.json())
-    .then(data => {
-        document.getElementById('sim-result').innerHTML = `
-        <div class="health-advice-box">
-            <div class="health-stat"><div>LUNG AGING</div><div style="color:#ef4444;">+${data.base_lung_aging_years} yrs</div></div>
-            <div class="health-stat"><div>EXPOSURE RATE</div><div style="color:#10b981;">${data.base_exposure_per_day} AQI/d</div></div>
-        </div>
-        <p style="margin-top:10px; font-size:0.8rem; color:var(--text-secondary);">${data.base_risk_reduction_tip}</p>
-        `;
-
-        const ctx = document.getElementById('simulator-chart').getContext('2d');
-        if (simChart) simChart.destroy();
-        simChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Exposure', 'Clean Capacity'],
-                datasets: [{
-                    data: [data.base_exposure_per_day, 500 - data.base_exposure_per_day],
-                    backgroundColor: ['#ef4444', 'rgba(255, 255, 255, 0.05)'],
-                    borderWidth: 0,
-                    cutout: '80%'
-                }]
-            },
-            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
-        });
-    });
-}
-
-// Chatbot Logic
-function toggleChatbot() {
-    const chat = document.getElementById('chatbot');
-    chat.style.display = chat.style.display === 'flex' ? 'none' : 'flex';
-}
-
-function sendMessage() {
-    const input = document.getElementById('chat-input');
-    const msg = input.value;
-    if (!msg) return;
-
-    const msgContainer = document.getElementById('chat-messages');
-    msgContainer.innerHTML += `<div class="msg user-msg">${msg}</div>`;
-    input.value = '';
-
-    fetch(`${API_BASE}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: msg })
-    })
-    .then(res => res.json())
-    .then(data => {
-        msgContainer.innerHTML += `<div class="msg bot-msg">${data.response.replace(/\n/g, '<br>')}</div>`;
-        msgContainer.scrollTop = msgContainer.scrollHeight;
-    });
 }
 
 // Toast Notifications
@@ -244,13 +177,13 @@ function showToast(message, icon = "fa-info-circle") {
     }, 3500);
 }
 
-// Live ML Inference on Map Click
+// Live ML Inference on Map Click with Quantile Uncertainty
 let livePredictionMarker = null;
 map.on('click', function(e) {
     const lat = e.latlng.lat;
     const lon = e.latlng.lng;
     
-    showToast("Analyzing micro-climate & running ML inference...", "fa-microchip");
+    showToast("Evaluating micro-climate quantile model...", "fa-crosshairs");
     
     if (livePredictionMarker) map.removeLayer(livePredictionMarker);
     livePredictionMarker = L.marker([lat, lon], {
@@ -274,11 +207,10 @@ map.on('click', function(e) {
             return;
         }
 
-        let pm25 = data.predicted_pm25;
-        let color = pm25 <= 50 ? '#10b981' : pm25 <= 150 ? '#f59e0b' : '#ef4444';
-        let status = pm25 <= 50 ? 'Clean Air' : pm25 <= 150 ? 'Moderate Risk' : 'Hazardous';
+        let pm25 = data.pm25_median;
+        let color = pm25 <= 60 ? '#10b981' : pm25 <= 150 ? '#f59e0b' : '#ef4444';
+        let status = pm25 <= 60 ? 'Moderate Air' : pm25 <= 150 ? 'Unhealthy' : 'Severe Inversion';
 
-        let estAqi = data.calculated_aqi || Math.round(pm25 * 1.35);
         map.removeLayer(livePredictionMarker);
         livePredictionMarker = L.marker([lat, lon], {
             icon: L.divIcon({
@@ -289,29 +221,28 @@ map.on('click', function(e) {
             })
         })
         .bindPopup(`
-            <div style="color: #0f172a; padding: 5px; min-width: 170px; font-family: 'Outfit', sans-serif;">
-                <div style="font-weight: 800; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 8px; display:flex; align-items:center; gap:6px;">
-                    <i class="fas fa-robot" style="color: var(--accent);"></i> Live ML Forecast
+            <div style="color: #f8fafc; padding: 4px; min-width: 190px; font-family: 'Outfit', sans-serif;">
+                <div style="font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px; margin-bottom: 8px; display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-brain" style="color: var(--accent);"></i> Spatial Forecast
                 </div>
                 <div style="font-size: 1.5rem; font-weight: 800; color: ${color}; line-height:1; margin-bottom:2px;">
-                    ${pm25} <span style="font-size:0.75rem; font-weight:600; color:#64748b;">µg/m³</span>
+                    ${pm25} <span style="font-size:0.75rem; font-weight:600; color:#94a3b8;">µg/m³ (P50)</span>
                 </div>
-                <div style="font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 8px;">
-                    Est. AQI Index: <strong style="color: ${color}; font-size:0.95rem;">${estAqi}</strong> (${status})
+                <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 8px;">
+                    80% Prediction Interval: <strong style="color: #f8fafc;">${data.ci_lower} – ${data.ci_upper} µg/m³</strong>
                 </div>
-                <div style="font-size: 0.85rem; color: #475569; display:flex; gap:10px; background:#f1f5f9; padding:6px; border-radius:8px;">
-                    <span><i class="fas fa-temperature-high" style="color:#f59e0b;"></i> ${data.live_weather.temp}°C</span>
-                    <span><i class="fas fa-wind" style="color:#0ea5e9;"></i> ${data.live_weather.wind}m/s</span>
+                <div style="font-size: 0.8rem; font-weight: 700; color: #cbd5e1; margin-bottom: 6px;">
+                    EPA AQI Equivalent: <strong style="color: ${color};">${data.calculated_aqi}</strong> (${status})
                 </div>
-                <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 8px; text-align:center;">
-                    Nearest Node: <strong>${data.nearest_station}</strong>
+                <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); padding-top:4px;">
+                    Nearest Reference Node: <strong>${data.nearest_station}</strong>
                 </div>
             </div>
         `, { closeButton: false, className: 'premium-popup' })
         .addTo(map)
         .openPopup();
         
-        showToast("Inference complete", "fa-check-circle");
+        showToast("Spatial inference complete", "fa-check-circle");
     })
     .catch(err => {
         showToast("Server unreachable", "fa-times-circle");

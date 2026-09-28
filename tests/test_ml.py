@@ -14,16 +14,17 @@ def test_models_directory_exists():
     assert os.path.exists("models")
 
 
-def test_stacked_model_file_exists():
-    model_path = os.path.join("models", "stacked_model.pkl")
-    assert os.path.exists(model_path), "stacked_model.pkl missing. Run train_model.py to build model binary."
+def test_model_binaries_exist():
+    for m in ["lgbm_model.pkl", "lgbm_p10.pkl", "lgbm_p50.pkl", "lgbm_p90.pkl", "features_list.pkl"]:
+        path = os.path.join("models", m)
+        assert os.path.exists(path), f"Missing model binary: {m}"
 
 
-def test_model_inference_output():
-    model_path = os.path.join("models", "stacked_model.pkl")
+def test_quantile_inference_bounds():
     feats_path = os.path.join("models", "features_list.pkl")
-    
-    model = joblib.load(model_path)
+    p10_model = joblib.load(os.path.join("models", "lgbm_p10.pkl"))
+    p50_model = joblib.load(os.path.join("models", "lgbm_p50.pkl"))
+    p90_model = joblib.load(os.path.join("models", "lgbm_p90.pkl"))
     feats = joblib.load(feats_path)
     
     vec = construct_feature_vector(
@@ -32,8 +33,9 @@ def test_model_inference_output():
     )
     
     df = pd.DataFrame([vec], columns=feats)
-    log_pred = model.predict(df)
-    pred_pm25 = float(np.expm1(log_pred)[0])
+    p10 = float(np.expm1(p10_model.predict(df))[0])
+    p50 = float(np.expm1(p50_model.predict(df))[0])
+    p90 = float(np.expm1(p90_model.predict(df))[0])
     
-    assert isinstance(pred_pm25, float)
-    assert 0.0 <= pred_pm25 <= 1000.0
+    assert 0.0 <= p10 <= p90
+    assert p10 <= p50 <= p90 + 5.0

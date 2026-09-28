@@ -24,7 +24,6 @@ def test_major_roads_list_non_empty():
 
 
 def test_min_distance_to_road():
-    # Test Connaught Place distance to roads (should be small > 0)
     cp_lat, cp_lon = 28.6315, 77.2167
     dist = min_distance_to_road(cp_lat, cp_lon)
     assert isinstance(dist, float)
@@ -37,7 +36,8 @@ def test_compute_time_features():
     
     assert "hour_sin" in feats
     assert "hour_cos" in feats
-    assert feats["month"] == 8
+    assert "month_sin" in feats
+    assert "month_cos" in feats
     assert feats["is_weekend"] == 0
     assert feats["is_rush_hour"] == 0
 
@@ -48,7 +48,6 @@ def test_construct_feature_vector_length():
         lag1=150.0, lag3=140.0, lag24=160.0, roll6=145.0, roll_std6=10.0
     )
     assert len(vec) == len(FEATURE_COLUMNS)
-    assert len(vec) == 18
 
 
 def test_engineer_dataframe_features():

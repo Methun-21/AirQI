@@ -1,50 +1,61 @@
-name: Hourly Data Collection and Model Training
+name: Automated Telemetry Ingestion & Test Suite
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
   schedule:
-    - cron: '0 * * * *'
+    # Run every 6 hours automatically
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI anytime
 
 jobs:
-  build:
+  telemetry-and-tests:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      OW_API_KEY: ${{ secrets.OW_API_KEY }}
-      WAQI_TOKEN: ${{ secrets.WAQI_TOKEN }}
-      ORS_API_KEY: ${{ secrets.ORS_API_KEY }}
-      
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
-      - name: Set up Python
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: 'pip'
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Run Pytest Automated Tests
-        run: python -m pytest tests/ -v
-
-      - name: Collect Telemetry into Database & CSV
-        run: python collect_data.py
-
-      - name: Commit and push changes
+      - name: Install Python Dependencies
         run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "actions-bot@github.com"
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Automated Test Suite (Pytest)
+        run: |
+          python -m pytest tests/ -v
+
+      - name: Ingest Real-Time Telemetry
+        env:
+          OW_API_KEY: ${{ secrets.OW_API_KEY }}
+          WAQI_TOKEN: ${{ secrets.WAQI_TOKEN }}
+          ORS_API_KEY: ${{ secrets.ORS_API_KEY }}
+        run: |
+          python collect_data.py
+
+      - name: Commit and Push Updated Database
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           
-          git add delhi_aqi_data_waqi.csv airaware.db
+          git add airaware.db delhi_aqi_data_waqi.csv || true
           
           if git diff --staged --quiet; then
             echo "No new telemetry to commit."
           else
-            git commit -m "Automated Telemetry Collection (SQLite DB & CSV)"
-            git push
+            git commit -m "Automated Telemetry Ingestion [skip ci]"
+            git pull --rebase origin main || true
+            git push origin main || git push || echo "Push skipped or succeeded."
           fi

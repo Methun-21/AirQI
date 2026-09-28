@@ -22,8 +22,9 @@ MAJOR_ROADS_AND_JUNCTIONS = [
 
 FEATURE_COLUMNS = [
     'lat', 'lon', 'temp', 'humidity', 'wind', 'hour_sin', 'hour_cos',
-    'distance_to_major_road', 'pm2_5_lag1', 'pm2_5_lag3', 'pm2_5_lag24',
-    'rolling_6h', 'rolling_std_6h', 'temp_hum', 'wind_temp', 'month',
+    'month_sin', 'month_cos', 'distance_to_major_road',
+    'pm2_5_lag1', 'pm2_5_lag3', 'pm2_5_lag24',
+    'rolling_6h', 'rolling_std_6h', 'temp_hum', 'wind_temp',
     'is_weekend', 'is_rush_hour'
 ]
 
@@ -34,7 +35,7 @@ def min_distance_to_road(lat: float, lon: float) -> float:
 
 
 def compute_time_features(dt: datetime = None):
-    """Generates temporal features including sin/cos cyclic hour encoding and rush-hour indicators."""
+    """Generates temporal features including sin/cos cyclic hour/month encoding and rush-hour indicators."""
     if dt is None:
         dt = datetime.now()
     
@@ -46,11 +47,14 @@ def compute_time_features(dt: datetime = None):
     is_rush_hour = 1 if (8 <= hour <= 11) or (17 <= hour <= 20) else 0
     hour_sin = float(np.sin(2 * np.pi * hour / 24.0))
     hour_cos = float(np.cos(2 * np.pi * hour / 24.0))
+    month_sin = float(np.sin(2 * np.pi * month / 12.0))
+    month_cos = float(np.cos(2 * np.pi * month / 12.0))
     
     return {
         'hour_sin': hour_sin,
         'hour_cos': hour_cos,
-        'month': month,
+        'month_sin': month_sin,
+        'month_cos': month_cos,
         'is_weekend': is_weekend,
         'is_rush_hour': is_rush_hour
     }
@@ -70,7 +74,7 @@ def construct_feature_vector(
     dt: datetime = None,
     dist_road_override: float = None
 ) -> list:
-    """Constructs an 18-element feature list for model prediction matching exact training schema."""
+    """Constructs an aligned feature list for model prediction matching exact training schema."""
     t_feats = compute_time_features(dt)
     dist_road = dist_road_override if dist_road_override is not None else min_distance_to_road(lat, lon)
     
@@ -80,8 +84,9 @@ def construct_feature_vector(
     return [
         lat, lon, temp, humidity, wind,
         t_feats['hour_sin'], t_feats['hour_cos'],
+        t_feats['month_sin'], t_feats['month_cos'],
         dist_road, lag1, lag3, lag24, roll6, roll_std6,
-        temp_hum, wind_temp, t_feats['month'],
+        temp_hum, wind_temp,
         t_feats['is_weekend'], t_feats['is_rush_hour']
     ]
 
@@ -89,6 +94,9 @@ def construct_feature_vector(
 def engineer_dataframe_features(df: pd.DataFrame, target_col: str = 'pm2_5') -> pd.DataFrame:
     """Processes historical DataFrame for model training and evaluation with lag and rolling statistics."""
     df = df.copy()
+    if 'time' not in df.columns and 'timestamp' in df.columns:
+        df['time'] = df['timestamp']
+        
     df['time'] = pd.to_datetime(df['time'], errors='coerce')
     df = df.dropna(subset=['time'])
     
@@ -103,14 +111,21 @@ def engineer_dataframe_features(df: pd.DataFrame, target_col: str = 'pm2_5') -> 
     df['is_rush_hour'] = df['hour'].apply(lambda x: 1 if (8 <= x <= 11) or (17 <= x <= 20) else 0)
     df['hour_sin'] = np.sin(2 * np.pi * df['hour'] / 24.0)
     df['hour_cos'] = np.cos(2 * np.pi * df['hour'] / 24.0)
+    df['month_sin'] = np.sin(2 * np.pi * df['month'] / 12.0)
+    df['month_cos'] = np.cos(2 * np.pi * df['month'] / 12.0)
     
-    # Spatiotemporal Lags & Rolling Statistics
+    # Spatiotemporal Lags & Rolling Statistics grouped by station
     df = df.sort_values(['location', 'time'])
     df['pm2_5_lag1'] = df.groupby('location')[target_col].shift(1)
     df['pm2_5_lag3'] = df.groupby('location')[target_col].shift(3)
     df['pm2_5_lag24'] = df.groupby('location')[target_col].shift(24)
     df['rolling_6h'] = df.groupby('location')[target_col].transform(lambda x: x.rolling(window=6, min_periods=1).mean())
     df['rolling_std_6h'] = df.groupby('location')[target_col].transform(lambda x: x.rolling(window=6, min_periods=1).std().fillna(0))
+    
+    # Multi-horizon forward targets for forecasting evaluation
+    df['pm2_5_lead1'] = df.groupby('location')[target_col].shift(-1)
+    df['pm2_5_lead6'] = df.groupby('location')[target_col].shift(-6)
+    df['pm2_5_lead24'] = df.groupby('location')[target_col].shift(-24)
     
     # Interaction terms
     df['temp_hum'] = df['temp'] * df['humidity']

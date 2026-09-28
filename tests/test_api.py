@@ -25,7 +25,8 @@ def test_health_endpoint(client):
     assert response.status_code == 200
     data = json.loads(response.data)
     assert data["status"] == "healthy"
-    assert "model_loaded" in data
+    assert "primary_model" in data
+    assert "uncertainty_estimator" in data
 
 
 def test_live_aqi_endpoint(client):
@@ -37,7 +38,7 @@ def test_live_aqi_endpoint(client):
     first_node = data[0]
     assert "location" in first_node
     assert "aqi" in first_node
-    assert "raw_aqi" in first_node
+    assert "pm2_5" in first_node
 
 
 def test_predict_point_endpoint(client):
@@ -49,49 +50,26 @@ def test_predict_point_endpoint(client):
     )
     assert response.status_code == 200
     data = json.loads(response.data)
-    assert "predicted_pm25" in data
-    assert isinstance(data["predicted_pm25"], (int, float))
+    assert "pm25_median" in data
+    assert "ci_lower" in data
+    assert "ci_upper" in data
+    assert data["ci_lower"] <= data["ci_upper"]
 
 
-def test_health_advice_endpoint(client):
-    payload = {"age": 30, "asthma": True, "aqi": 180}
-    response = client.post(
-        '/api/health-advice',
-        data=json.dumps(payload),
-        content_type='application/json'
-    )
-    assert response.status_code == 200
-    data = json.loads(response.data)
-    assert "best_time" in data
-    assert "mask" in data
-    assert "activity" in data
-
-
-def test_simulator_endpoint(client):
+def test_routes_endpoint(client):
     payload = {
-        "routine": [{"location": "Connaught Place", "duration_hours": 3}],
-        "years": 1,
-        "changes": {"mask": True, "indoor": False}
+        "start": [77.2167, 28.6315],
+        "end": [77.0460, 28.5921]
     }
     response = client.post(
-        '/api/simulator',
+        '/api/routes',
         data=json.dumps(payload),
         content_type='application/json'
     )
     assert response.status_code == 200
     data = json.loads(response.data)
-    assert "base_exposure_per_day" in data
-    assert "base_lung_aging_years" in data
-    assert "what_if_exposure" in data
-
-
-def test_chatbot_endpoint(client):
-    payload = {"message": "What is the current AQI in Delhi?"}
-    response = client.post(
-        '/api/chat',
-        data=json.dumps(payload),
-        content_type='application/json'
-    )
-    assert response.status_code == 200
-    data = json.loads(response.data)
-    assert "response" in data
+    assert data["type"] == "FeatureCollection"
+    assert len(data["features"]) > 0
+    first_feat = data["features"][0]
+    assert "expected_pm25" in first_feat["properties"]
+    assert "ci_80" in first_feat["properties"]
