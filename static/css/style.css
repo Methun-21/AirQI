@@ -47,7 +47,11 @@ body {
 }
 
 #map_container.active {
-    filter: grayscale(0.2) contrast(1.05) brightness(1);
+    filter: none;
+}
+
+.leaflet-tile {
+    filter: brightness(0.55) invert(1) contrast(2.5) hue-rotate(200deg) saturate(0.2) brightness(0.75) !important;
 }
 
 body.admin-mode #map_container.active {

@@ -11,9 +11,10 @@ fetch(`${API_BASE}/health`)
     })
     .catch(err => console.warn("Backend health check warning:", err));
 
-// Custom Dark Map Theme
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: ''
+// Clean High-Performance Map Theme
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    subdomains: ['a', 'b', 'c']
 }).addTo(map);
 
 document.getElementById('map_container').classList.add('active');
