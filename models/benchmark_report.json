@@ -1,106 +1,106 @@
 {
-  "evaluation_timestamp": "2026-11-15T05:02:42.142747",
-  "train_samples": 29987,
-  "test_samples": 5292,
+  "evaluation_timestamp": "2026-11-22T05:22:28.734616",
+  "train_samples": 30123,
+  "test_samples": 5316,
   "temporal_split_metrics": {
     "persistence_baseline": {
-      "mae": 27.01,
-      "rmse": 48.21,
-      "r2": 0.471
+      "mae": 28.16,
+      "rmse": 49.9,
+      "r2": 0.454
     },
     "seasonal_climatology": {
-      "mae": 70.4,
-      "rmse": 87.27,
-      "r2": -0.734
+      "mae": 69.26,
+      "rmse": 86.27,
+      "r2": -0.633
     },
     "lightgbm_primary": {
-      "mae": 23.86,
-      "rmse": 40.27,
-      "r2": 0.631
+      "mae": 24.94,
+      "rmse": 42.2,
+      "r2": 0.609
     },
     "stacking_ensemble": {
-      "mae": 23.56,
-      "rmse": 40.67,
-      "r2": 0.623
+      "mae": 24.38,
+      "rmse": 42.34,
+      "r2": 0.607
     },
-    "uncertainty_picp_80": 74.07,
-    "mean_interval_width": 56.4
+    "uncertainty_picp_80": 72.84,
+    "mean_interval_width": 58.38
   },
   "smog_spike_metrics": {
-    "sample_count": 1670,
+    "sample_count": 1792,
     "lightgbm": {
-      "mae": 39.08,
-      "rmse": 61.62,
-      "r2": 0.167
+      "mae": 39.66,
+      "rmse": 61.73,
+      "r2": 0.138
     },
     "persistence": {
-      "mae": 38.28,
-      "rmse": 68.03,
-      "r2": -0.015
+      "mae": 39.13,
+      "rmse": 68.32,
+      "r2": -0.057
     }
   },
   "loso_spatial_cv": {
     "by_station": {
       "Connaught Place": {
-        "mae": 18.94,
-        "rmse": 29.63,
-        "r2": 0.9
+        "mae": 19.02,
+        "rmse": 29.8,
+        "r2": 0.899
       },
       "Karol Bagh": {
-        "mae": 18.96,
-        "rmse": 29.65,
+        "mae": 19.05,
+        "rmse": 29.72,
         "r2": 0.899
       },
       "Chandni Chowk": {
-        "mae": 18.8,
-        "rmse": 29.32,
-        "r2": 0.927
+        "mae": 18.85,
+        "rmse": 29.57,
+        "r2": 0.925
       },
       "Dwarka": {
-        "mae": 18.29,
-        "rmse": 28.72,
-        "r2": 0.92
-      },
-      "Saket": {
-        "mae": 13.52,
-        "rmse": 22.55,
-        "r2": 0.917
-      },
-      "Rohini": {
-        "mae": 20.18,
-        "rmse": 30.18,
-        "r2": 0.934
-      },
-      "Lajpat Nagar": {
-        "mae": 28.52,
-        "rmse": 43.96,
-        "r2": 0.856
-      },
-      "Mayur Vihar": {
-        "mae": 18.78,
-        "rmse": 29.56,
+        "mae": 18.43,
+        "rmse": 28.97,
         "r2": 0.918
       },
+      "Saket": {
+        "mae": 13.53,
+        "rmse": 22.08,
+        "r2": 0.92
+      },
+      "Rohini": {
+        "mae": 20.35,
+        "rmse": 30.55,
+        "r2": 0.932
+      },
+      "Lajpat Nagar": {
+        "mae": 28.77,
+        "rmse": 44.51,
+        "r2": 0.852
+      },
+      "Mayur Vihar": {
+        "mae": 18.81,
+        "rmse": 29.44,
+        "r2": 0.919
+      },
       "Vasant Kunj": {
-        "mae": 13.47,
-        "rmse": 22.5,
-        "r2": 0.917
+        "mae": 13.52,
+        "rmse": 22.23,
+        "r2": 0.919
       },
       "Delhi University": {
-        "mae": 18.84,
-        "rmse": 30.47,
-        "r2": 0.924
+        "mae": 19.03,
+        "rmse": 30.63,
+        "r2": 0.923
       }
     },
     "overall_lgbm": {
-      "mae": 18.83,
-      "rmse": 30.17,
-      "r2": 0.913
+      "mae": 18.93,
+      "rmse": 30.31,
+      "r2": 0.912
     },
     "overall_persistence": {
-      "mae": 21.39,
-      "rmse": 36.52,
-      "r2": 0.873
+      "mae": 21.55,
+      "rmse": 36.83,
+      "r2": 0.87
     }
   }
 }
